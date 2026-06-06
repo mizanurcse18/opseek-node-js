@@ -1,0 +1,272 @@
+import React from 'react';
+import { Button } from '@/components/ui/Button';
+import { Edit2, Trash2, Plus, Navigation, History, Layout } from 'lucide-react';
+import { DataTable, Column } from '@/components/ui/DataTable';
+import { geoService } from '@/lib/auth/api/geo.service';
+import { cn } from '@/lib/utils';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { AuditLogModal } from '@/components/ui/AuditLogModal';
+import { AuditLogFormModal } from '@/components/ui/AuditLogFormModal';
+import { useToast } from '@/components/ui/Toast';
+import { handleApiError } from '@/lib/error-handler';
+import { useMenuButtons } from '@/hooks/useMenuButtons';
+import { companyService } from '@/lib/auth/api/company.service';
+
+interface ThanaTableProps {
+  onAdd?: () => void;
+  onEdit?: (thana: any) => void;
+  isSuperUser?: boolean;
+}
+
+export default function ThanaTable({ onAdd, onEdit, isSuperUser = false }: ThanaTableProps) {
+  const [itemToDelete, setItemToDelete] = React.useState<any>(null);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [refreshKey, setRefreshKey] = React.useState(0);
+  const [companies, setCompanies] = React.useState<{ value: string | number; label: string }[]>([]);
+  const [auditLogState, setAuditLogState] = React.useState<{ isOpen: boolean; id: string | number; name: string }>({
+    isOpen: false,
+    id: '',
+    name: ''
+  });
+  const [auditLogFormState, setAuditLogFormState] = React.useState<{ isOpen: boolean; id: string | number; name: string }>({
+    isOpen: false,
+    id: '',
+    name: ''
+  });
+
+  const { toast, ToastComponent } = useToast();
+
+  React.useEffect(() => {
+    if (isSuperUser) {
+      const loadCompanies = async () => {
+        try {
+          const resp = await companyService.getAllCompanies();
+          if (resp && Array.isArray(resp)) {
+            setCompanies(resp.map(c => ({
+              value: c.value || c.id || c.company_id || c.CompanyID,
+              label: c.label || c.company_name || c.CompanyName || `Company #${c.value || c.id}`
+            })));
+          }
+        } catch (error) {
+          console.error('Failed to load companies for ThanaTable:', error);
+        }
+      };
+      loadCompanies();
+    }
+  }, [isSuperUser]);
+
+  const { buttons } = useMenuButtons(React.useMemo(() => [
+    { button_id: 'btnAdd', button_title: 'Add Thana' },
+    { button_id: 'btnEdit', button_title: 'Edit Thana' },
+    { button_id: 'btnDelete', button_title: 'Delete Thana' },
+    { button_id: 'btnAuditGrid', button_title: 'Grid Audit' },
+    { button_id: 'btnAuditForm', button_title: 'Form Audit' }
+  ], []));
+
+  const btnAdd = buttons.find(b => b.button_id === 'btnAdd');
+  const btnEdit = buttons.find(b => b.button_id === 'btnEdit');
+  const btnDelete = buttons.find(b => b.button_id === 'btnDelete');
+  const btnAuditGrid = buttons.find(b => b.button_id === 'btnAuditGrid');
+  const btnAuditForm = buttons.find(b => b.button_id === 'btnAuditForm');
+
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
+
+    const id = itemToDelete.ThanaID || itemToDelete.thana_id;
+    setIsDeleting(true);
+    try {
+      const response = await geoService.deleteThana(id);
+      if (response && (response.status_code === 200 || response.response_code === 'Success')) {
+        toast({ title: 'Success', description: 'Thana deleted successfully.', status: 'success' });
+        setRefreshKey(prev => prev + 1);
+        setItemToDelete(null);
+      } else {
+        toast(handleApiError(response));
+      }
+    } catch (error) {
+      toast(handleApiError(error));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const fetchDataFn = React.useMemo(() =>
+    isSuperUser ? geoService.getThanaGridDataSuper : geoService.getThanaGridData,
+    [isSuperUser]);
+
+  const columns: Column[] = React.useMemo(() => [
+    {
+      header: 'sl',
+      accessor: 'autogenrownum',
+      sortable: false,
+      render: (_: any, row: any) => (
+        <span className="font-mono text-[10px] font-bold bg-content-bg px-2 py-1 rounded text-text-main">{row.autogenrownum}</span>
+      )
+    },
+    {
+      header: 'Thana Name',
+      accessor: 'thana_name',
+      searchFieldName: 'thana_name',
+      sortable: true,
+      searchable: true,
+      className: 'font-bold text-text-main',
+      render: (_: any, row: any) => (
+        <span className="font-bold text-text-main">{row.thana_name || row.ThanaName}</span>
+      )
+    },
+    {
+      header: 'Bangla Name',
+      accessor: 'bangla_thana_name',
+      searchFieldName: 'bangla_thana_name',
+      sortable: true,
+      visible: false,
+      className: 'text-text-muted',
+      render: (_: any, row: any) => (
+        <span className="font-medium text-text-muted">{row.bangla_thana_name || row.BanglaThanaName || '—'}</span>
+      )
+    },
+    {
+      header: 'District',
+      accessor: 'district_name',
+      searchFieldName: 'district_name',
+      sortable: true,
+      searchable: true,
+      className: 'text-text-muted',
+      render: (_: any, row: any) => (
+        <span className="font-medium text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full text-[10px] uppercase tracking-wide">
+          {row.district_name || row.DistrictName}
+        </span>
+      )
+    },
+    {
+      header: 'Company',
+      accessor: 'company_id',
+      searchFieldName: 'company_id',
+      sortable: true,
+      searchable: true,
+      searchType: 'select' as const,
+      searchOptions: companies,
+      visible: isSuperUser,
+      className: 'text-text-muted',
+      render: (_: any, row: any) => (
+        <span className="font-medium text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full text-[10px] uppercase tracking-wide">
+          {companies.find(c => String(c.value) === String(row.company_id || row.CompanyID))?.label || row.company_id || row.CompanyID}
+        </span>
+      )
+    },
+    {
+      header: 'Actions',
+      accessor: 'actions',
+      className: 'text-right',
+      render: (_: any, row: any) => (
+        <div className="flex justify-end gap-1">
+          {btnEdit?.visible && (
+            <Button
+              variant="ghost"
+              size="sm"
+              title={btnEdit.button_title}
+              onClick={() => onEdit?.(row)}
+              className="h-8 w-8 p-0 text-amber-500 hover:bg-amber-500/10"
+            >
+              <Edit2 className="h-4 w-4" />
+            </Button>
+          )}
+          {btnDelete?.visible && (
+            <Button
+              variant="ghost"
+              size="sm"
+              title={btnDelete.button_title}
+              onClick={() => setItemToDelete(row)}
+              className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+          {btnAuditGrid?.visible && (
+            <Button
+              variant="ghost"
+              size="sm"
+              title={btnAuditGrid.button_title}
+              className="h-8 w-8 p-0 text-amber-500 hover:text-amber-600 hover:bg-amber-50"
+              onClick={() => setAuditLogState({
+                isOpen: true,
+                id: row.ThanaID || row.thana_id,
+                name: row.thana_name || row.ThanaName
+              })}
+            >
+              <History className="h-4 w-4" />
+            </Button>
+          )}
+          {btnAuditForm?.visible && (
+            <Button
+              variant="ghost"
+              size="sm"
+              title={btnAuditForm.button_title}
+              className="h-8 w-8 p-0 text-primary-500 hover:text-amber-500 hover:bg-amber-500/10"
+              onClick={() => setAuditLogFormState({
+                isOpen: true,
+                id: row.ThanaID || row.thana_id,
+                name: row.thana_name || row.ThanaName
+              })}
+            >
+              <Layout className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      )
+    }
+  ], [onEdit, btnEdit, btnDelete, btnAuditGrid, btnAuditForm, companies, isSuperUser, setAuditLogState, setAuditLogFormState]);
+
+  return (
+    <>
+      <DataTable
+        columns={columns}
+        fetchDataFn={fetchDataFn}
+        refreshKey={refreshKey}
+        striped={true}
+        searchPlaceholder="Search thanas..."
+        renderActions={() => (
+          <>
+            {btnAdd?.visible && (
+              <Button
+                onClick={onAdd}
+                size="sm"
+                className="h-7 bg-primary-600 hover:bg-primary-700 text-white shadow-sm flex items-center gap-2 px-3"
+              >
+                <Plus className="h-3 w-3" />
+                <span className="text-[9px] font-black uppercase tracking-widest">{btnAdd.button_title}</span>
+              </Button>
+            )}
+          </>
+        )}
+      />
+
+      <ConfirmDialog
+        isOpen={!!itemToDelete}
+        onClose={() => !isDeleting && setItemToDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Thana"
+        description="Are you sure you want to delete this thana? This action cannot be undone."
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        loading={isDeleting}
+      />
+
+      <AuditLogModal
+        isOpen={auditLogState.isOpen}
+        onClose={() => setAuditLogState(prev => ({ ...prev, isOpen: false }))}
+        entityName="Thana"
+        entityId={auditLogState.id}
+      />
+
+      <AuditLogFormModal
+        isOpen={auditLogFormState.isOpen}
+        onClose={() => setAuditLogFormState(prev => ({ ...prev, isOpen: false }))}
+        entityName="Thana"
+        entityId={auditLogFormState.id}
+      />
+
+      <ToastComponent />
+    </>
+  );
+}

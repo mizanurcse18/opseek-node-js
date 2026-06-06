@@ -1,0 +1,23 @@
+# Node
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+*.log
+
+# .NET (future)
+bin/
+obj/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
+
+# Common
+.DS_Store
+coverage/
+.nyc_output/
+*.pdb
+*.dll

@@ -1,0 +1,107 @@
+import { apiService } from '@/lib/api.service';
+import { API_MODULES, API_ENDPOINTS } from '@/constants/api';
+import { GridRequest } from './security.service';
+
+const MODULE = API_MODULES.AUTH;
+
+const autoParseRows = (response: any) => {
+  if (response?.data?.rows && typeof response.data.rows === 'string') {
+    try {
+      response.data.rows = JSON.parse(response.data.rows);
+    } catch (e) {
+      console.error("Failed to parse rows JSON string:", e);
+    }
+  }
+  return response;
+};
+
+export const geoService = {
+  // --- Division ---
+  getDivisionGridData: async (params: Partial<GridRequest>): Promise<any> => {
+    const response = await apiService.post(MODULE, API_ENDPOINTS.DIVISION.GET_GRID, params);
+    return autoParseRows(response);
+  },
+  getDivisionGridDataSuper: async (params: Partial<GridRequest>): Promise<any> => {
+    const response = await apiService.post(MODULE, API_ENDPOINTS.DIVISION.GET_GRID_SUPER, params);
+    return autoParseRows(response);
+  },
+  getDivisionById: async (id: number | string): Promise<any> => {
+    return apiService.get(MODULE, API_ENDPOINTS.DIVISION.GET_BY_ID(id));
+  },
+  saveDivision: async (payload: any): Promise<any> => {
+    return apiService.post(MODULE, API_ENDPOINTS.DIVISION.SAVE, payload);
+  },
+  deleteDivision: async (id: number | string): Promise<any> => {
+    return apiService.get(MODULE, API_ENDPOINTS.DIVISION.DELETE(id));
+  },
+  getDivisionCombo: async (): Promise<any> => {
+    const response: any = await apiService.get(MODULE, API_ENDPOINTS.COMBO.GET_DIVISIONS);
+    return response?.data || [];
+  },
+  getDivisionComboSuper: async (): Promise<any> => {
+    const response: any = await apiService.get(MODULE, API_ENDPOINTS.COMBO.GET_DIVISIONS_SUPER);
+    return response?.data || [];
+  },
+
+  // --- District ---
+  getDistrictGridData: async (params: Partial<GridRequest>): Promise<any> => {
+    const response = await apiService.post(MODULE, API_ENDPOINTS.DISTRICT.GET_GRID, params);
+    return autoParseRows(response);
+  },
+  getDistrictGridDataSuper: async (params: Partial<GridRequest>): Promise<any> => {
+    const response = await apiService.post(MODULE, API_ENDPOINTS.DISTRICT.GET_GRID_SUPER, params);
+    return autoParseRows(response);
+  },
+  getDistrictById: async (id: number | string): Promise<any> => {
+    return apiService.get(MODULE, API_ENDPOINTS.DISTRICT.GET_BY_ID(id));
+  },
+  saveDistrict: async (payload: any): Promise<any> => {
+    return apiService.post(MODULE, API_ENDPOINTS.DISTRICT.SAVE, payload);
+  },
+  deleteDistrict: async (id: number | string): Promise<any> => {
+    return apiService.get(MODULE, API_ENDPOINTS.DISTRICT.DELETE(id));
+  },
+  getDistrictCombo: async (): Promise<any> => {
+    const response: any = await apiService.get(MODULE, API_ENDPOINTS.COMBO.GET_DISTRICTS);
+    return response?.data || [];
+  },
+  getDistrictComboSuper: async (): Promise<any> => {
+    const response: any = await apiService.get(MODULE, API_ENDPOINTS.COMBO.GET_DISTRICTS_SUPER);
+    return response?.data || [];
+  },
+  getDistrictByDivision: async (divisionId: string | number): Promise<any> => {
+    const response: any = await apiService.get(MODULE, API_ENDPOINTS.COMBO.GET_DISTRICTS_BY_DIVISION(divisionId));
+    return response?.data || [];
+  },
+
+  // --- Thana ---
+  getThanaGridData: async (params: Partial<GridRequest>): Promise<any> => {
+    const response = await apiService.post(MODULE, API_ENDPOINTS.THANA.GET_GRID, params);
+    return autoParseRows(response);
+  },
+  getThanaGridDataSuper: async (params: Partial<GridRequest>): Promise<any> => {
+    const response = await apiService.post(MODULE, API_ENDPOINTS.THANA.GET_GRID_SUPER, params);
+    return autoParseRows(response);
+  },
+  getThanaById: async (id: number | string): Promise<any> => {
+    return apiService.get(MODULE, API_ENDPOINTS.THANA.GET_BY_ID(id));
+  },
+  saveThana: async (payload: any): Promise<any> => {
+    return apiService.post(MODULE, API_ENDPOINTS.THANA.SAVE, payload);
+  },
+  deleteThana: async (id: number | string): Promise<any> => {
+    return apiService.get(MODULE, API_ENDPOINTS.THANA.DELETE(id));
+  },
+  getThanaCombo: async (): Promise<any> => {
+    const response: any = await apiService.get(MODULE, API_ENDPOINTS.COMBO.GET_THANAS);
+    return response?.data || [];
+  },
+  getThanaComboSuper: async (): Promise<any> => {
+    const response: any = await apiService.get(MODULE, API_ENDPOINTS.COMBO.GET_THANAS_SUPER);
+    return response?.data || [];
+  },
+  getThanaByDistrict: async (districtId: string | number): Promise<any> => {
+    const response: any = await apiService.get(MODULE, API_ENDPOINTS.COMBO.GET_THANAS_BY_DISTRICT(districtId));
+    return response?.data || [];
+  },
+};
