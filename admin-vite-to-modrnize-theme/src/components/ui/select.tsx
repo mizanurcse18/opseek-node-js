@@ -6,6 +6,9 @@ import { cn } from '@/lib/utils';
 import { cva, VariantProps } from 'class-variance-authority';
 import { Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { Select as SelectPrimitive } from 'radix-ui';
+import { Select as OldSelect } from '../ui-old/Select';
+
+export type { Option } from '../ui-old/Select';
 
 // Create a Context for `indicatorPosition` and `indicator` control
 const SelectContext = React.createContext<{
@@ -20,11 +23,19 @@ const Select = ({
   indicatorVisibility = true,
   indicator,
   ...props
-}: {
-  indicatorPosition?: 'left' | 'right';
-  indicatorVisibility?: boolean;
-  indicator?: ReactNode;
-} & React.ComponentProps<typeof SelectPrimitive.Root>) => {
+}: any) => {
+  if ('options' in props) {
+    return (
+      <OldSelect
+        indicatorPosition={indicatorPosition}
+        indicatorVisibility={indicatorVisibility}
+        indicator={indicator}
+        {...props}
+        options={props.options || []}
+      />
+    );
+  }
+
   return (
     <SelectContext.Provider value={{ indicatorPosition, indicatorVisibility, indicator }}>
       <SelectPrimitive.Root {...props} />

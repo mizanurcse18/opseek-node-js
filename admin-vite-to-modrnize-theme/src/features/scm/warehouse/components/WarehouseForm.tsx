@@ -6,7 +6,7 @@ import { companyService } from '@/lib/auth/api/company.service';
 import { geoService } from '@/lib/auth/api/geo.service';
 import { useToast } from '@/components/ui/Toast';
 import { handleApiError } from '@/lib/error-handler';
-import { Select } from '@/components/ui/Select';
+import { Select } from '@/components/ui-old/Select';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { cn } from '@/lib/utils';
 import { MapPin, Globe, Navigation, Home } from 'lucide-react';
@@ -228,9 +228,9 @@ export function WarehouseForm({ initialData, isSuperUser = false, onSave, onClos
   return (
     <>
     <form id="warehouse-form" onSubmit={handleSubmit} className="space-y-6 py-2">
-      <div className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {isSuperUser && (
-          <div className="space-y-2">
+          <div className="space-y-2 md:col-span-3">
             <Label className="text-[10px] font-black uppercase tracking-widest text-text-muted/50 ml-1">
               Company Context <span className="text-red-500 font-bold">*</span>
             </Label>
@@ -245,7 +245,7 @@ export function WarehouseForm({ initialData, isSuperUser = false, onSave, onClos
           </div>
         )}
 
-        <div className="space-y-2">
+        <div className="space-y-2 md:col-span-3">
           <Label htmlFor="warehouse_name" className="text-[10px] font-black uppercase tracking-widest text-text-muted/50 ml-1">
             Warehouse Name <span className="text-red-500 font-bold">*</span>
           </Label>
@@ -263,7 +263,7 @@ export function WarehouseForm({ initialData, isSuperUser = false, onSave, onClos
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 md:col-span-1">
           <Label className="text-[10px] font-black uppercase tracking-widest text-text-muted/50 ml-1">
             Division <span className="text-red-500 font-bold">*</span>
           </Label>
@@ -276,7 +276,7 @@ export function WarehouseForm({ initialData, isSuperUser = false, onSave, onClos
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 md:col-span-1">
           <Label className="text-[10px] font-black uppercase tracking-widest text-text-muted/50 ml-1">
             District <span className="text-red-500 font-bold">*</span>
           </Label>
@@ -290,7 +290,7 @@ export function WarehouseForm({ initialData, isSuperUser = false, onSave, onClos
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 md:col-span-1">
           <Label className="text-[10px] font-black uppercase tracking-widest text-text-muted/50 ml-1">
             Thana <span className="text-red-500 font-bold">*</span>
           </Label>
@@ -304,7 +304,7 @@ export function WarehouseForm({ initialData, isSuperUser = false, onSave, onClos
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 md:col-span-3">
           <Label htmlFor="location" className="text-[10px] font-black uppercase tracking-widest text-text-muted/50 ml-1">Street Address</Label>
           <div className="relative group">
             <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted/50 group-focus-within:text-primary-600 transition-colors" />

@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '@/app/store';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
+import { Select } from '@/components/ui/select';
 import { MultiSelect } from '@/components/ui/MultiSelect';
 import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';

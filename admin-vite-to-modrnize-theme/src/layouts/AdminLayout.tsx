@@ -155,8 +155,8 @@ export default function AdminLayout() {
 
           {/* Main Content Area - Scrollable */}
           <div id="main-scroll-container" className="overflow-y-auto overflow-x-hidden bg-content-bg">
-            <main className="p-6 lg:p-10 min-h-full flex flex-col">
-              <div className="mx-auto max-w-7xl w-full flex-1">
+            <main className="pt-4 pb-6 pl-4 pr-12 lg:pt-6 lg:pb-10 lg:pl-6 lg:pr-14 min-h-full flex flex-col">
+              <div className="mx-auto max-w-full w-full flex-1">
                 <Outlet />
               </div>
             </main>

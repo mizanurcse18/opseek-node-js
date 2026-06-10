@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
+import { Select } from '@/components/ui/select';
 import { Loader } from '@/components/ui/Loader';
 import { Save, ShoppingCart, CheckSquare, Square, Warehouse } from 'lucide-react';
 import { purchaseQuotationService } from '@/lib/scm/api/purchase-quotation.service';

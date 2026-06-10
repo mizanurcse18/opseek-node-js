@@ -12,7 +12,7 @@ import { Building2, Shield, Upload, X, ImageIcon, Info, Star, Save, Loader2 } fr
 import { useMenuButtons } from '@/hooks/useMenuButtons';
 import { Loader } from '@/components/ui/Loader';
 import { Select } from '@/components/ui-old/Select';
-import { Option } from '@/components/ui/Select';
+import { Option } from '@/components/ui/select';
 
 interface CompanyModalProps {
   isOpen: boolean;

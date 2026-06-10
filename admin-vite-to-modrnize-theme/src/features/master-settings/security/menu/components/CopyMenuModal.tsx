@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Copy, X, Loader, Search, CheckCircle2, ChevronRight, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Select, Option } from '@/components/ui/Select';
+import { Select, Option } from '@/components/ui/select';
 import { securityService } from '@/lib/auth/api/security.service';
 import { cn } from '@/lib/utils';
 

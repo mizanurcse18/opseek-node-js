@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { ChevronDown, LucideIcon } from 'lucide-react';
+import { ChevronDown, LucideIcon, Loader2 } from 'lucide-react';
 import { Slot as SlotPrimitive } from 'radix-ui';
 import { cn } from '@/lib/utils';
 
@@ -370,16 +370,20 @@ function Button({
   underline,
   asChild = false,
   placeholder = false,
+  isLoading = false,
+  children,
   ...props
 }: React.ComponentProps<'button'> &
   VariantProps<typeof buttonVariants> & {
     selected?: boolean;
     asChild?: boolean;
+    isLoading?: boolean;
   }) {
   const Comp = asChild ? SlotPrimitive.Slot : 'button';
   return (
     <Comp
       data-slot="button"
+      disabled={props.disabled || isLoading}
       className={cn(
         buttonVariants({
           variant,
@@ -393,11 +397,14 @@ function Button({
           underline,
           className,
         }),
-        asChild && props.disabled && 'pointer-events-none opacity-50',
+        asChild && (props.disabled || isLoading) && 'pointer-events-none opacity-50',
       )}
       {...(selected && { 'data-state': 'open' })}
       {...props}
-    />
+    >
+      {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin shrink-0" />}
+      {children}
+    </Comp>
   );
 }
 

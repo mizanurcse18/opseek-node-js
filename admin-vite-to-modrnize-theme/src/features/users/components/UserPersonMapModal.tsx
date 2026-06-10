@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { Select } from '@/components/ui/Select';
+import { Select } from '@/components/ui/select';
 import { apiService } from '@/lib/api.service';
 import { userService } from '@/lib/auth/api/user.service';
 import { useToast } from '@/components/ui/Toast';

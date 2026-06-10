@@ -11,7 +11,7 @@ import { useToast } from '@/components/ui/Toast';
 import { handleApiError } from '@/lib/error-handler';
 import { Switch } from '@/components/ui/Switch';
 import { MultiSelect } from '@/components/ui/MultiSelect';
-import { Select } from '@/components/ui/Select';
+import { Select } from '@/components/ui/select';
 import { Eye, EyeOff, Layout, Globe, Shield, Loader2, CheckCircle2, UserCircle, ClipboardCheck, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';

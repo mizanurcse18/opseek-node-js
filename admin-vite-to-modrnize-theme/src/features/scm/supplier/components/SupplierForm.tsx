@@ -6,7 +6,7 @@ import { companyService } from '@/lib/auth/api/company.service';
 import { financeCOAService } from '@/lib/scm/api/product.service';
 import { useToast } from '@/components/ui/Toast';
 import { handleApiError } from '@/lib/error-handler';
-import { Select } from '@/components/ui/Select';
+import { Select } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { cn, validateEmail } from '@/lib/utils';
 import { Building2, User, Phone, Mail, BookOpen, AlertCircle } from 'lucide-react';

@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useMenuTitle } from '@/hooks/useMenuTitle';
 import { companyService } from '@/lib/auth/api/company.service';
-import { Select } from '@/components/ui/Select';
+import { Select } from '@/components/ui/select';
 import PurchaseOrderTable from '../components/PurchaseOrderTable';
 
 interface PurchaseOrderPageProps {

@@ -3,7 +3,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
-import { Select } from '@/components/ui/Select';
+import { Select } from '@/components/ui/select';
 import { Loader } from '@/components/ui/Loader';
 import { Save, Plus, Trash2 } from 'lucide-react';
 import { salesService } from '@/lib/scm/api/sales.service';
