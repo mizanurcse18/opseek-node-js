@@ -16,6 +16,7 @@ interface ProductModalProps {
 
 export function ProductModal({ isOpen, onClose, onSave, initialData, isSuperUser }: ProductModalProps) {
   const [loading, setLoading] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
   const isEditing = !!(initialData?.product_id ?? initialData?.id);
 
   return (
@@ -39,13 +40,18 @@ export function ProductModal({ isOpen, onClose, onSave, initialData, isSuperUser
           <Button
             type="submit"
             form={PRODUCT_FORM_ID_MODAL}
-            disabled={loading}
+            disabled={loading || saving}
             className="bg-[#2e125c] hover:bg-[#3d187a] text-white flex items-center gap-2 py-1.5 px-4 rounded-lg shadow-md hover:shadow-lg transition-all"
           >
-            {loading ? (
+            {saving ? (
               <>
                 <Loader className="h-3.5 w-3.5 animate-spin text-white" />
                 <span className="text-[10px] font-black uppercase tracking-[0.12em] text-white">Saving...</span>
+              </>
+            ) : loading ? (
+              <>
+                <Loader className="h-3.5 w-3.5 animate-spin text-white" />
+                <span className="text-[10px] font-black uppercase tracking-[0.12em] text-white">Loading...</span>
               </>
             ) : (
               <>
@@ -68,6 +74,7 @@ export function ProductModal({ isOpen, onClose, onSave, initialData, isSuperUser
           onSave={onSave}
           onClose={onClose}
           onLoadingChange={setLoading}
+          onSavingChange={setSaving}
         />
       </div>
     </Modal>

@@ -18,11 +18,11 @@ const getClientIp = async (): Promise<string> => {
 };
 
 export const apiClient = axios.create({
-  baseURL: `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:7000'}${import.meta.env.VITE_API_PREFIX || '/api/v1'}`,
+  baseURL: `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:7000'}${import.meta.env.VITE_API_PREFIX ?? '/api/v1'}`,
   headers: {
     'Content-Type': 'application/json',
-    'X-IMEI': import.meta.env.VITE_X_IMEI || '',
-    'device_mac': import.meta.env.VITE_DEVICE_MAC || ''
+    'X-IMEI': import.meta.env.VITE_X_IMEI ?? '',
+    'device_mac': import.meta.env.VITE_DEVICE_MAC ?? ''
   },
 });
 
@@ -41,18 +41,26 @@ apiClient.interceptors.request.use(
       config.headers['X-Forwarded-For'] = ip;
     }
 
+    // Skip ALL transforms for FormData — must delete the default 'application/json'
+    // Content-Type so the browser auto-sets 'multipart/form-data; boundary=...' correctly.
+    // Without this, ASP.NET cannot parse the multipart body and every [FromForm] field is null.
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+      return config;
+    }
+
     // Handle Client-Side Encryption
     if (config.encrypt) {
       try {
         if (config.data) {
-          const encryptedBody = await encryptRequest(config.data);
+          const encryptedBody = await encryptRequest(config.data, config);
           config.data = `"${encryptedBody}"`; // Backend expects a quoted string for [FromBody] string
           config.headers['Content-Type'] = 'application/json';
           config.headers['X-Encrypted-Request'] = 'true';
         } else {
           // For GET/DELETE or empty body, we send the session key in a header
           // This allows the server to reuse this key for the response encryption
-          const encryptedKeyPacket = await encryptRequest(null);
+          const encryptedKeyPacket = await encryptRequest(null, config);
           config.headers['X-Encrypted-Session-Key'] = encryptedKeyPacket;
           config.headers['X-Encrypted-Request'] = 'true';
           config.headers['X-Encrypted-Response'] = 'true';
@@ -80,8 +88,8 @@ apiClient.interceptors.response.use(
 
     if (config.encrypt && encryptedString) {
       try {
-        data = await decryptResponse(encryptedString);
-        console.log('Decrypted Response:', data);
+        data = await decryptResponse(encryptedString, config.aesKey);
+        if (import.meta.env.DEV) console.log('Decrypted Response:', data);
       } catch (e) {
         console.error('Decryption failed', e);
         // If decryption fails, it might be a plain error message or server crash
@@ -92,6 +100,10 @@ apiClient.interceptors.response.use(
     if (data && (data.status_code === 401 || data.response_code === 401 || data.response_code === 'UNAUTHORIZED')) {
       const message = data.message || 'Authorization failed. Please login again.';
       store.dispatch(setAuthError(message));
+      return Promise.reject(data);
+    }
+
+    if (data && (data.response_code === 'ERROR' || data.response_code === 'FAILURE')) {
       return Promise.reject(data);
     }
     return data;

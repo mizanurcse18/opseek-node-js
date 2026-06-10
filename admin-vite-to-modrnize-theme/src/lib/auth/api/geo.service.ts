@@ -15,6 +15,8 @@ const autoParseRows = (response: any) => {
   return response;
 };
 
+const cache: Record<string, any> = {};
+
 export const geoService = {
   // --- Division ---
   getDivisionGridData: async (params: Partial<GridRequest>): Promise<any> => {
@@ -35,12 +37,18 @@ export const geoService = {
     return apiService.get(MODULE, API_ENDPOINTS.DIVISION.DELETE(id));
   },
   getDivisionCombo: async (): Promise<any> => {
+    if (cache['divisions']) return cache['divisions'];
     const response: any = await apiService.get(MODULE, API_ENDPOINTS.COMBO.GET_DIVISIONS);
-    return response?.data || [];
+    const data = response?.data || [];
+    cache['divisions'] = data;
+    return data;
   },
   getDivisionComboSuper: async (): Promise<any> => {
+    if (cache['divisions_super']) return cache['divisions_super'];
     const response: any = await apiService.get(MODULE, API_ENDPOINTS.COMBO.GET_DIVISIONS_SUPER);
-    return response?.data || [];
+    const data = response?.data || [];
+    cache['divisions_super'] = data;
+    return data;
   },
 
   // --- District ---
@@ -59,19 +67,29 @@ export const geoService = {
     return apiService.post(MODULE, API_ENDPOINTS.DISTRICT.SAVE, payload);
   },
   deleteDistrict: async (id: number | string): Promise<any> => {
-    return apiService.get(MODULE, API_ENDPOINTS.DISTRICT.DELETE(id));
+    return apiService.get(MODULE, API_ENDPOINTS.DIVISION.DELETE(id));
   },
   getDistrictCombo: async (): Promise<any> => {
+    if (cache['districts_all']) return cache['districts_all'];
     const response: any = await apiService.get(MODULE, API_ENDPOINTS.COMBO.GET_DISTRICTS);
-    return response?.data || [];
+    const data = response?.data || [];
+    cache['districts_all'] = data;
+    return data;
   },
   getDistrictComboSuper: async (): Promise<any> => {
+    if (cache['districts_super']) return cache['districts_super'];
     const response: any = await apiService.get(MODULE, API_ENDPOINTS.COMBO.GET_DISTRICTS_SUPER);
-    return response?.data || [];
+    const data = response?.data || [];
+    cache['districts_super'] = data;
+    return data;
   },
   getDistrictByDivision: async (divisionId: string | number): Promise<any> => {
+    const key = `districts_${divisionId}`;
+    if (cache[key]) return cache[key];
     const response: any = await apiService.get(MODULE, API_ENDPOINTS.COMBO.GET_DISTRICTS_BY_DIVISION(divisionId));
-    return response?.data || [];
+    const data = response?.data || [];
+    cache[key] = data;
+    return data;
   },
 
   // --- Thana ---
@@ -93,15 +111,25 @@ export const geoService = {
     return apiService.get(MODULE, API_ENDPOINTS.THANA.DELETE(id));
   },
   getThanaCombo: async (): Promise<any> => {
+    if (cache['thanas_all']) return cache['thanas_all'];
     const response: any = await apiService.get(MODULE, API_ENDPOINTS.COMBO.GET_THANAS);
-    return response?.data || [];
+    const data = response?.data || [];
+    cache['thanas_all'] = data;
+    return data;
   },
   getThanaComboSuper: async (): Promise<any> => {
+    if (cache['thanas_super']) return cache['thanas_super'];
     const response: any = await apiService.get(MODULE, API_ENDPOINTS.COMBO.GET_THANAS_SUPER);
-    return response?.data || [];
+    const data = response?.data || [];
+    cache['thanas_super'] = data;
+    return data;
   },
   getThanaByDistrict: async (districtId: string | number): Promise<any> => {
+    const key = `thanas_${districtId}`;
+    if (cache[key]) return cache[key];
     const response: any = await apiService.get(MODULE, API_ENDPOINTS.COMBO.GET_THANAS_BY_DISTRICT(districtId));
-    return response?.data || [];
+    const data = response?.data || [];
+    cache[key] = data;
+    return data;
   },
 };

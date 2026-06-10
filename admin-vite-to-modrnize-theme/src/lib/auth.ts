@@ -13,7 +13,17 @@ export const getRefreshToken = () => localStorage.getItem('refresh_token');
 export const clearTokens = () => {
   localStorage.removeItem('token');
   localStorage.removeItem('refresh_token');
+  localStorage.removeItem('is_admin');
   clearUserDetails();
+};
+
+/**
+ * Returns true if the current logged-in user is a superadmin.
+ * Reads from the stored user details (set during login), not from JWT decoding.
+ */
+export const isSuperAdmin = (): boolean => {
+  const user = getUserDetails();
+  return !!user?.is_admin;
 };
 
 export const setUserDetails = (user: any) => {

@@ -3,7 +3,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
-import { Select } from '@/components/ui-old/Select';
+import { Select } from '@/components/ui/Select';
 import { Loader } from '@/components/ui/Loader';
 import { Save, Plus, Trash2, AlertCircle } from 'lucide-react';
 import { purchaseRequisitionService, type PurchaseRequisitionDetail } from '@/lib/scm/api/purchase-requisition.service';
@@ -112,6 +112,7 @@ export function PurchaseRequisitionModal({ isOpen, onClose, onSave, initialData,
   useEffect(() => {
     if (!isOpen) return;
     const loadCombos = async () => {
+      setLoading(true);
       try {
         const [whRes, prodRes, unitRes] = await Promise.all([
           warehouseService.getWarehouseCombo(isSuperUser),
@@ -139,6 +140,8 @@ export function PurchaseRequisitionModal({ isOpen, onClose, onSave, initialData,
         setUnitMap(uMap);
       } catch (err) {
         console.error('Failed to load combos:', err);
+      } finally {
+        setLoading(false);
       }
     };
     loadCombos();
@@ -292,7 +295,7 @@ export function PurchaseRequisitionModal({ isOpen, onClose, onSave, initialData,
         <div className="flex items-center gap-3 pr-2">
           <Button
             type="button"
-            disabled={saving}
+            disabled={loading || saving}
             onClick={handleSubmit}
             className="bg-[#2e125c] hover:bg-[#3d187a] text-white flex items-center gap-2 py-1.5 px-4 rounded-lg shadow-md hover:shadow-lg transition-all"
           >
@@ -300,6 +303,11 @@ export function PurchaseRequisitionModal({ isOpen, onClose, onSave, initialData,
               <>
                 <Loader className="h-3.5 w-3.5 animate-spin text-white" />
                 <span className="text-[10px] font-black uppercase tracking-[0.12em] text-white">Saving...</span>
+              </>
+            ) : loading ? (
+              <>
+                <Loader className="h-3.5 w-3.5 animate-spin text-white" />
+                <span className="text-[10px] font-black uppercase tracking-[0.12em] text-white">Loading...</span>
               </>
             ) : (
               <>

@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/Button';
 import { Edit2, Trash2, Plus, Building2 } from 'lucide-react';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import { supplierService } from '@/lib/scm/api/supplier.service';
+import { companyService } from '@/lib/auth/api/company.service';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import { handleApiError } from '@/lib/error-handler';
@@ -22,6 +23,26 @@ export default function SupplierTable({ onAdd, onEdit, isSuperUser = false }: Su
   const [itemToDelete, setItemToDelete] = React.useState<any>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [internalRefreshKey, setInternalRefreshKey] = React.useState(0);
+  const [companies, setCompanies] = React.useState<{ value: string | number; label: string }[]>([]);
+
+  React.useEffect(() => {
+    if (isSuperUser) {
+      const loadCompanies = async () => {
+        try {
+          const resp = await companyService.getAllCompanies();
+          if (resp && Array.isArray(resp)) {
+            setCompanies(resp.map(c => ({
+              value: c.value || c.id || c.company_id || c.CompanyID,
+              label: c.label || c.company_name || c.CompanyName || `Company #${c.value || c.id}`
+            })));
+          }
+        } catch (error) {
+          console.error('Failed to load companies for SupplierTable:', error);
+        }
+      };
+      loadCompanies();
+    }
+  }, [isSuperUser]);
 
   const { toast, ToastComponent } = useToast();
 
@@ -137,11 +158,17 @@ export default function SupplierTable({ onAdd, onEdit, isSuperUser = false }: Su
       header: 'Company' as string,
       accessor: 'company_id' as string,
       sortable: true,
-      render: (val: any) => (
-        <span className="text-[10px] font-mono font-bold text-text-muted bg-surface-secondary px-1.5 py-0.5 rounded">
-          {val || '—'}
-        </span>
-      ),
+      searchable: true,
+      searchType: 'select' as const,
+      searchOptions: companies,
+      render: (val: any) => {
+        const company = companies.find(c => String(c.value) === String(val));
+        return (
+          <span className="text-[10px] font-mono font-bold text-text-muted bg-surface-secondary px-1.5 py-0.5 rounded">
+            {company ? company.label : (val || '—')}
+          </span>
+        );
+      },
     }] : []),
     {
       header: 'Actions',
@@ -174,7 +201,7 @@ export default function SupplierTable({ onAdd, onEdit, isSuperUser = false }: Su
         </div>
       ),
     },
-  ], [onEdit, btnEdit, btnDelete, isSuperUser]);
+  ], [onEdit, btnEdit, btnDelete, isSuperUser, companies]);
 
   return (
     <>

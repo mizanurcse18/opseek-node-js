@@ -7,6 +7,7 @@ export interface OcrRequest {
   fileData: string;
   fileName: string;
   documentType: 'NID' | 'NID-Front' | 'NID-Back' | 'Passport' | 'DrivingLicense' | 'License';
+  oldFileKey?: string; // Optional old file to delete
 }
 
 export interface OcrResponse {
@@ -15,6 +16,8 @@ export interface OcrResponse {
   date_of_birth: string;
   address: string;
   confidence_score: number;
+  file_path: string;
+  file_key: string;
   extra_fields?: Record<string, string>;
 }
 
@@ -40,6 +43,7 @@ export interface KycSubmitPayload {
   documents: Array<{
     document_type: string;
     file_path: string;
+    file_key?: string;
     status: string;
   }>;
 }
@@ -49,12 +53,17 @@ export const kycService = {
     return apiService.post(MODULE, API_ENDPOINTS.KYC.OCR, payload);
   },
 
-  submitKyc: async (payload: any): Promise<any> => {
-    return apiService.post(MODULE, API_ENDPOINTS.KYC.SUBMIT, payload);
+  uploadDocument: async (formData: FormData): Promise<any> => {
+    return apiService.post(MODULE, '/kyc/upload-document', formData);
+  },
+
+
+  submitKyc: async (formData: FormData): Promise<any> => {
+    return apiService.post(MODULE, API_ENDPOINTS.KYC.SUBMIT, formData);
   },
 
   getKyc: async (userId: number): Promise<any> => {
-    return apiService.get(MODULE, `/kyc/get-kyc/${userId}`);
+    return apiService.postSecure(MODULE, '/kyc/get-kyc', { UserID: userId });
   },
 
   getWorkflowConfig: async (userType: number): Promise<any> => {
@@ -64,5 +73,13 @@ export const kycService = {
   saveWorkflowConfig: async (userType: number, configJson: any): Promise<any> => {
     const jsonString = typeof configJson === 'string' ? configJson : JSON.stringify(configJson);
     return apiService.post(MODULE, '/kyc/save-workflow-config', { user_type: userType, config_json: jsonString });
+  },
+
+  getDealers: async (): Promise<any> => {
+    return apiService.get(API_MODULES.AUTH, '/combo/get-dealers');
+  },
+
+  getDsrs: async (): Promise<any> => {
+    return apiService.get(API_MODULES.AUTH, '/combo/get-dsrs');
   }
 };

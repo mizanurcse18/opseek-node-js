@@ -105,5 +105,18 @@ export const warehouseService = {
 
   deleteWarehouse: async (id: number | string): Promise<any> => {
     return apiService.get(API_MODULES.SCM, API_ENDPOINTS.WAREHOUSE.DELETE(id));
-  }
+  },
+
+  getWarehouseCombo: async (isSuper = false): Promise<{ value: number; label: string }[]> => {
+    const params: GridRequest = {
+      ServerPagination: true, Limit: 99999, Offset: 0, Order: 'asc',
+      SearchBy: '', SearchType: '', Search: '', Sort: 'warehouse_id',
+      SortName: '', SortOrder: '', ApprovalFilterData: '', Parameters: [], menuid: 0,
+    };
+    const endpoint = isSuper ? API_ENDPOINTS.WAREHOUSE.GET_GRID_SUPER : API_ENDPOINTS.WAREHOUSE.GET_GRID;
+    const res: any = await apiService.post(API_MODULES.SCM, endpoint, params);
+    const rows = res?.data?.rows ?? res?.data ?? [];
+    const list = Array.isArray(rows) ? rows : [];
+    return list.map((w: any) => ({ value: w.warehouse_id ?? w.id, label: w.warehouse_name ?? '' }));
+  },
 };

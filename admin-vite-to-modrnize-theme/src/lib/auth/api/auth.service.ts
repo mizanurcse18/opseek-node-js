@@ -1,5 +1,5 @@
 import { apiService } from '@/lib/api.service';
-import { LoginCredentials, AuthResponse, RefreshTokenRequest } from '@/features/auth/types/auth';
+import { LoginCredentials, AuthResponse, RefreshTokenRequest, ChangeCompanyRequest } from '@/features/auth/types/auth';
 import { API_MODULES } from '@/constants/api';
 
 export const authService = {
@@ -17,5 +17,8 @@ export const authService = {
   },
   signOut: async (data: RefreshTokenRequest): Promise<any> => {
     return apiService.post<any>(API_MODULES.AUTH, '/user/sign-out', data);
+  },
+  changeCompany: async (data: ChangeCompanyRequest): Promise<AuthResponse> => {
+    return apiService.postSecure<AuthResponse>(API_MODULES.AUTH, '/user/change-company-refresh-token', data);
   }
 };

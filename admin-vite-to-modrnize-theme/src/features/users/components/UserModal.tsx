@@ -15,6 +15,7 @@ interface UserModalProps {
 }
 
 export function UserModal({ isOpen, onClose, initialData, isSuperUser = false, onSave, roleType }: UserModalProps) {
+  const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const isEditing = !!initialData;
 
@@ -33,16 +34,18 @@ export function UserModal({ isOpen, onClose, initialData, isSuperUser = false, o
       form="user-form"
       type="submit"
       size="sm"
-      disabled={isSaving}
+      disabled={isLoading || isSaving}
       className="bg-[#3b2768] hover:bg-[#2d1e50] flex items-center gap-2 px-4 whitespace-nowrap"
     >
       {isSaving ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      ) : isLoading ? (
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
       ) : (
         <Save className="h-3.5 w-3.5" />
       )}
       <span className="text-[10px] font-black uppercase tracking-widest text-white">
-        {isSaving ? 'Saving...' : activeBtn.button_title}
+        {isSaving ? 'Saving...' : isLoading ? 'Loading...' : activeBtn.button_title}
       </span>
     </Button>
   );
@@ -62,7 +65,8 @@ export function UserModal({ isOpen, onClose, initialData, isSuperUser = false, o
           isEditing={isEditing}
           onSave={onSave}
           onClose={onClose}
-          onLoadingChange={setIsSaving}
+          onLoadingChange={setIsLoading}
+          onSavingChange={setIsSaving}
           roleType={roleType}
         />
       </div>

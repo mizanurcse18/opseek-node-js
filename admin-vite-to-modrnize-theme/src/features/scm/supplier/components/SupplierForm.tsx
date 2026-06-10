@@ -6,10 +6,10 @@ import { companyService } from '@/lib/auth/api/company.service';
 import { financeCOAService } from '@/lib/scm/api/product.service';
 import { useToast } from '@/components/ui/Toast';
 import { handleApiError } from '@/lib/error-handler';
-import { Select } from '@/components/ui-old/Select';
+import { Select } from '@/components/ui/Select';
 import { Checkbox } from '@/components/ui/Checkbox';
-import { cn } from '@/lib/utils';
-import { Building2, User, Phone, Mail, BookOpen } from 'lucide-react';
+import { cn, validateEmail } from '@/lib/utils';
+import { Building2, User, Phone, Mail, BookOpen, AlertCircle } from 'lucide-react';
 
 interface SupplierFormProps {
   initialData?: any;
@@ -17,11 +17,13 @@ interface SupplierFormProps {
   onSave?: () => void;
   onClose: () => void;
   onLoadingChange?: (loading: boolean) => void;
+  onSavingChange?: (saving: boolean) => void;
 }
 
-export function SupplierForm({ initialData, isSuperUser = false, onSave, onClose, onLoadingChange }: SupplierFormProps) {
+export function SupplierForm({ initialData, isSuperUser = false, onSave, onClose, onLoadingChange, onSavingChange }: SupplierFormProps) {
   const [formData, setFormData] = useState<Supplier>({
     supplier_id: 0,
+    person_id: 0,
     supplier_code: '',
     business_name: '',
     first_name: '',
@@ -35,6 +37,7 @@ export function SupplierForm({ initialData, isSuperUser = false, onSave, onClose
 
   const [companies, setCompanies] = useState<{ value: string | number; label: string }[]>([]);
   const [ledgerCOA, setLedgerCOA] = useState<{ value: string | number; label: string }[]>([]);
+  const [emailError, setEmailError] = useState('');
 
   const { toast, ToastComponent } = useToast();
 
@@ -51,10 +54,20 @@ export function SupplierForm({ initialData, isSuperUser = false, onSave, onClose
           try {
             const resp = await companyService.getAllCompanies();
             if (isMounted && resp && Array.isArray(resp)) {
-              setCompanies(resp.map(c => ({
+              const mapped = resp.map(c => ({
                 value: c.value || c.id || c.company_id,
                 label: c.label || c.company_name || `Company #${c.value || c.id}`
-              })));
+              }));
+              setCompanies(mapped);
+              // Auto-select first company if none is set
+              if (mapped.length > 0) {
+                setFormData(prev => {
+                  if (!prev.company_id) {
+                    return { ...prev, company_id: String(mapped[0].value) };
+                  }
+                  return prev;
+                });
+              }
             }
           } catch (error) {
             console.error('Failed to load companies:', error);
@@ -85,6 +98,7 @@ export function SupplierForm({ initialData, isSuperUser = false, onSave, onClose
               const data = response.data;
               setFormData({
                 supplier_id: data.supplier_id || supplierId,
+                person_id: data.person_id || 0,
                 supplier_code: data.supplier_code || '',
                 business_name: data.business_name || '',
                 first_name: data.first_name || '',
@@ -95,6 +109,12 @@ export function SupplierForm({ initialData, isSuperUser = false, onSave, onClose
                 company_id: data.company_id || '',
                 ledger_id: data.ledger_id || '',
               });
+              // Perform initial email validation if email exists
+              if (data.email && isMounted) {
+                if (!validateEmail(data.email)) {
+                  setEmailError('Please enter a valid email address');
+                }
+              }
             }
           } catch (error) {
             console.error('Failed to fetch supplier details:', error);
@@ -102,6 +122,7 @@ export function SupplierForm({ initialData, isSuperUser = false, onSave, onClose
         } else if (initialData && isMounted) {
           setFormData({
             supplier_id: initialData.supplier_id || 0,
+            person_id: initialData.person_id || 0,
             supplier_code: initialData.supplier_code || '',
             business_name: initialData.business_name || '',
             first_name: initialData.first_name || '',
@@ -112,6 +133,9 @@ export function SupplierForm({ initialData, isSuperUser = false, onSave, onClose
             company_id: initialData.company_id || '',
             ledger_id: initialData.ledger_id || '',
           });
+          if (initialData.email && !validateEmail(initialData.email)) {
+            setEmailError('Please enter a valid email address');
+          }
         }
       } finally {
         if (onLoadingChange && isMounted) onLoadingChange(false);
@@ -125,6 +149,13 @@ export function SupplierForm({ initialData, isSuperUser = false, onSave, onClose
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'email') {
+      if (value && !validateEmail(value)) {
+        setEmailError('Please enter a valid email address');
+      } else {
+        setEmailError('');
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -147,8 +178,12 @@ export function SupplierForm({ initialData, isSuperUser = false, onSave, onClose
       toast({ title: 'Validation Error', description: 'Mobile number is required.', status: 'error' });
       return;
     }
+    if (formData.email && !validateEmail(formData.email)) {
+      toast({ title: 'Validation Error', description: 'Please enter a valid email address.', status: 'error' });
+      return;
+    }
 
-    if (onLoadingChange) onLoadingChange(true);
+    if (onSavingChange) onSavingChange(true);
 
     try {
       const response = await supplierService.saveSupplier(formData);
@@ -163,7 +198,7 @@ export function SupplierForm({ initialData, isSuperUser = false, onSave, onClose
     } catch (error) {
       toast(handleApiError(error));
     } finally {
-      if (onLoadingChange) onLoadingChange(false);
+      if (onSavingChange) onSavingChange(false);
     }
   };
 
@@ -278,9 +313,18 @@ export function SupplierForm({ initialData, isSuperUser = false, onSave, onClose
               onChange={handleChange}
               placeholder="e.g. john@example.com"
               type="email"
-              className="h-11 pl-10 text-sm font-medium border-border-theme focus:ring-4 focus:ring-primary-500/10 shadow-sm transition-all"
+              className={cn(
+                "h-11 pl-10 text-sm font-medium border-border-theme focus:ring-4 focus:ring-primary-500/10 shadow-sm transition-all",
+                emailError && "border-red-500 focus:border-red-500 focus:ring-red-500/10"
+              )}
             />
           </div>
+          {emailError && (
+            <p className="text-[11px] font-bold text-red-500 flex items-center gap-1 ml-1 mt-1 animate-in slide-in-from-left-1">
+              <AlertCircle className="w-3 h-3" />
+              {emailError}
+            </p>
+          )}
         </div>
       </div>
 

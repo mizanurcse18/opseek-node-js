@@ -15,6 +15,7 @@ interface SupplierModalProps {
 
 export function SupplierModal({ isOpen, onClose, onSave, initialData, isSuperUser }: SupplierModalProps) {
   const [loading, setLoading] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
   const isEditing = !!(initialData?.supplier_id || initialData?.id);
 
   return (
@@ -33,13 +34,18 @@ export function SupplierModal({ isOpen, onClose, onSave, initialData, isSuperUse
           <Button 
             type="submit" 
             form="supplier-form"
-            disabled={loading}
+            disabled={loading || saving}
             className="bg-[#2e125c] hover:bg-[#3d187a] text-white flex items-center gap-2 py-1.5 px-4 rounded-lg shadow-md hover:shadow-lg transition-all"
           >
-            {loading ? (
+            {saving ? (
               <>
                 <Loader className="h-3.5 w-3.5 animate-spin text-white" />
                 <span className="text-[10px] font-black uppercase tracking-[0.12em] text-white">Saving...</span>
+              </>
+            ) : loading ? (
+              <>
+                <Loader className="h-3.5 w-3.5 animate-spin text-white" />
+                <span className="text-[10px] font-black uppercase tracking-[0.12em] text-white">Loading...</span>
               </>
             ) : (
               <>
@@ -61,6 +67,7 @@ export function SupplierModal({ isOpen, onClose, onSave, initialData, isSuperUse
           onSave={onSave}
           onClose={onClose}
           onLoadingChange={setLoading}
+          onSavingChange={setSaving}
         />
       </div>
     </Modal>

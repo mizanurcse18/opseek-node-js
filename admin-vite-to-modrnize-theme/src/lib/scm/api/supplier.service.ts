@@ -19,6 +19,7 @@ export interface GridRequest {
 
 export interface Supplier {
   supplier_id?: number;
+  person_id?: number;
   supplier_code?: string;
   business_name?: string;
   first_name?: string;
@@ -56,22 +57,22 @@ const parseRows = (response: any) => {
 
 export const supplierService = {
   getGridData: async (params: Partial<GridRequest>): Promise<any> =>
-    parseRows(await apiService.post(API_MODULES.SCM, API_ENDPOINTS.SUPPLIER.GET_GRID, { ...defaultGrid, ...params })),
+    parseRows(await apiService.post(API_MODULES.AUTH, API_ENDPOINTS.SUPPLIER.GET_GRID, { ...defaultGrid, ...params })),
 
   getGridDataSuper: async (params: Partial<GridRequest>): Promise<any> =>
-    parseRows(await apiService.post(API_MODULES.SCM, API_ENDPOINTS.SUPPLIER.GET_GRID_SUPER, { ...defaultGrid, ...params })),
+    parseRows(await apiService.post(API_MODULES.AUTH, API_ENDPOINTS.SUPPLIER.GET_GRID_SUPER, { ...defaultGrid, ...params })),
 
   getSupplier: async (id: number | string): Promise<any> =>
-    apiService.get(API_MODULES.SCM, API_ENDPOINTS.SUPPLIER.GET_BY_ID(id)),
+    apiService.get(API_MODULES.AUTH, API_ENDPOINTS.SUPPLIER.GET_BY_ID(id)),
 
   saveSupplier: async (data: Supplier): Promise<any> =>
-    apiService.post(API_MODULES.SCM, API_ENDPOINTS.SUPPLIER.SAVE, data),
+    apiService.post(API_MODULES.AUTH, API_ENDPOINTS.SUPPLIER.SAVE, data),
 
   deleteSupplier: async (id: number | string): Promise<any> =>
-    apiService.get(API_MODULES.SCM, API_ENDPOINTS.SUPPLIER.DELETE(id)),
+    apiService.get(API_MODULES.AUTH, API_ENDPOINTS.SUPPLIER.DELETE(id)),
 
   getCombo: async (companyId?: string): Promise<any> => {
     const query = companyId ? `?companyId=${encodeURIComponent(companyId)}` : '';
-    return apiService.get(API_MODULES.SCM, `/combo/get-supplier-combo${query}`);
+    return apiService.get(API_MODULES.AUTH, `/combo/get-supplier-combo${query}`);
   },
 };

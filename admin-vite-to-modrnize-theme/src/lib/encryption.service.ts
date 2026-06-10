@@ -28,7 +28,7 @@ const getServerPublicKey = (): string => {
  * Encrypts a request body using Hybrid RSA+AES Encryption
  * Packet Structure: [KeyLen(4)][EncKey][IV(16)][EncData]
  */
-export async function encryptRequest(data: any): Promise<string> {
+export async function encryptRequest(data: any, config?: any): Promise<string> {
   const jsonString = JSON.stringify(data);
   const dataBytes = new TextEncoder().encode(jsonString);
 
@@ -38,6 +38,9 @@ export async function encryptRequest(data: any): Promise<string> {
     true,
     ["encrypt", "decrypt"]
   );
+  if (config) {
+    config.aesKey = lastAesKey;
+  }
   const iv = window.crypto.getRandomValues(new Uint8Array(16));
 
   // 2. Encrypt data with AES
@@ -69,7 +72,7 @@ export async function encryptRequest(data: any): Promise<string> {
  * Decrypts a response packet using the last used AES Session Key
  * Packet Structure: [0,0,0,0][IV(16)][EncData]
  */
-export async function decryptResponse(base64Data: string): Promise<any> {
+export async function decryptResponse(base64Data: string, customAesKey?: CryptoKey): Promise<any> {
   try {
     const binaryString = atob(base64Data);
     const packet = new Uint8Array(binaryString.length);
@@ -84,7 +87,8 @@ export async function decryptResponse(base64Data: string): Promise<any> {
 
     if (keyLen === 0) {
       // Session Key Reuse Mode
-      if (!lastAesKey) {
+      const aesKey = customAesKey || lastAesKey;
+      if (!aesKey) {
         console.error("Encryption Error: No active session key found.");
         throw new Error("No session key found. Did you send a request first?");
       }
@@ -92,7 +96,7 @@ export async function decryptResponse(base64Data: string): Promise<any> {
       const iv = packet.slice(4, 20);
       const encryptedData = packet.slice(20);
 
-      const decryptedBuffer = await window.crypto.subtle.decrypt({ name: "AES-CBC", iv }, lastAesKey, encryptedData);
+      const decryptedBuffer = await window.crypto.subtle.decrypt({ name: "AES-CBC", iv }, aesKey, encryptedData);
       const jsonString = new TextDecoder().decode(decryptedBuffer);
       return JSON.parse(jsonString);
     } else {

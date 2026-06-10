@@ -6,7 +6,7 @@ import { companyService } from '@/lib/auth/api/company.service';
 import { geoService } from '@/lib/auth/api/geo.service';
 import { useToast } from '@/components/ui/Toast';
 import { handleApiError } from '@/lib/error-handler';
-import { Select } from '@/components/ui-old/Select';
+import { Select } from '@/components/ui/Select';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { cn } from '@/lib/utils';
 import { MapPin, Globe, Navigation, Home } from 'lucide-react';
@@ -17,9 +17,10 @@ interface WarehouseFormProps {
   onSave?: () => void;
   onClose: () => void;
   onLoadingChange?: (loading: boolean) => void;
+  onSavingChange?: (saving: boolean) => void;
 }
 
-export function WarehouseForm({ initialData, isSuperUser = false, onSave, onClose, onLoadingChange }: WarehouseFormProps) {
+export function WarehouseForm({ initialData, isSuperUser = false, onSave, onClose, onLoadingChange, onSavingChange }: WarehouseFormProps) {
   const [formData, setFormData] = useState<Warehouse>({
     warehouse_id: 0,
     warehouse_name: '',
@@ -51,10 +52,20 @@ export function WarehouseForm({ initialData, isSuperUser = false, onSave, onClos
           try {
             const resp = await companyService.getAllCompanies();
             if (isMounted && resp && Array.isArray(resp)) {
-              setCompanies(resp.map(c => ({
+              const mapped = resp.map(c => ({
                 value: c.value || c.id || c.company_id,
                 label: c.label || c.company_name || `Company #${c.value || c.id}`
-              })));
+              }));
+              setCompanies(mapped);
+              // Auto-select first company if none is set
+              if (mapped.length > 0) {
+                setFormData(prev => {
+                  if (!prev.company_id) {
+                    return { ...prev, company_id: String(mapped[0].value) };
+                  }
+                  return prev;
+                });
+              }
             }
           } catch (error) {
             console.error('Failed to load companies:', error);
@@ -194,7 +205,7 @@ export function WarehouseForm({ initialData, isSuperUser = false, onSave, onClos
       return;
     }
 
-    if (onLoadingChange) onLoadingChange(true);
+    if (onSavingChange) onSavingChange(true);
 
     try {
       const saveFn = isSuperUser ? warehouseService.saveWarehouseSuper : warehouseService.saveWarehouse;
@@ -210,7 +221,7 @@ export function WarehouseForm({ initialData, isSuperUser = false, onSave, onClos
     } catch (error) {
       toast(handleApiError(error));
     } finally {
-      if (onLoadingChange) onLoadingChange(false);
+      if (onSavingChange) onSavingChange(false);
     }
   };
 
@@ -225,7 +236,7 @@ export function WarehouseForm({ initialData, isSuperUser = false, onSave, onClos
             </Label>
             <Select
               options={companies}
-              value={formData.company_id}
+              value={formData.company_id ?? null}
               onChange={(val) => setFormData(prev => ({ ...prev, company_id: val?.toString() || '' }))}
               placeholder="Select Company"
               required={isSuperUser}
@@ -258,7 +269,7 @@ export function WarehouseForm({ initialData, isSuperUser = false, onSave, onClos
           </Label>
           <Select
             options={divisions}
-            value={formData.division_id}
+            value={formData.division_id ?? null}
             onChange={(val) => setFormData(prev => ({ ...prev, division_id: val || '', district_id: '', thana_id: '' }))}
             placeholder="Select Division"
             className="w-full shadow-sm"
@@ -271,7 +282,7 @@ export function WarehouseForm({ initialData, isSuperUser = false, onSave, onClos
           </Label>
           <Select
             options={districts}
-            value={formData.district_id}
+            value={formData.district_id ?? null}
             onChange={(val) => setFormData(prev => ({ ...prev, district_id: val || '', thana_id: '' }))}
             placeholder="Select District"
             disabled={!formData.division_id}
@@ -285,7 +296,7 @@ export function WarehouseForm({ initialData, isSuperUser = false, onSave, onClos
           </Label>
           <Select
             options={thanas}
-            value={formData.thana_id}
+            value={formData.thana_id ?? null}
             onChange={(val) => setFormData(prev => ({ ...prev, thana_id: val || '' }))}
             placeholder="Select Thana"
             disabled={!formData.district_id}

@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Menu, Bell, QrCode, User, Image as ImageIcon, Lock, LogOut } from 'lucide-react';
+import { Menu, Bell, QrCode, User, Image as ImageIcon, Lock, LogOut, Building2 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { ROUTES } from '@/constants/routes';
-import { clearTokens, getRefreshToken, getToken } from '@/lib/auth';
+import { clearTokens, getRefreshToken, getToken, isSuperAdmin } from '@/lib/auth';
 import { authService } from '@/lib/auth/api/auth.service';
 import { logout } from '@/features/auth/authSlice';
+import { CompanySwitchModal } from '@/features/auth/components/CompanySwitchModal';
 import { Maximize, Minimize, Type } from 'lucide-react';
 import { themeService } from '@/lib/theme.service';
 import { cn } from '@/lib/utils';
@@ -20,6 +21,9 @@ export default function Header({ toggleSidebar }: HeaderProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  const [isCompanySwitchOpen, setIsCompanySwitchOpen] = useState(false);
+  const isAdmin = isSuperAdmin();
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isFontDropdownOpen, setIsFontDropdownOpen] = useState(false);
@@ -114,6 +118,7 @@ export default function Header({ toggleSidebar }: HeaderProps) {
 
   const fontSizeOptions = [70, 80, 90, 100, 110, 120, 130];
   return (
+    <>
     <header className={cn(
       "sticky top-0 z-[40] flex h-[72px] flex-shrink-0 bg-header-bg transition-all duration-300",
       isScrolled ? "shadow-sm" : "shadow-none"
@@ -197,6 +202,20 @@ export default function Header({ toggleSidebar }: HeaderProps) {
               </div>
             )}
           </div>
+
+          {/* Switch Company (superadmin only) */}
+          {isAdmin && (
+            <button 
+              onClick={() => setIsCompanySwitchOpen(true)}
+              className="p-2 text-header-icon transition-all duration-200 rounded-full hover:bg-header-icon-hover relative group"
+              title="Switch Company"
+            >
+              <Building2 className="h-5 w-5" />
+              <span className="absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center rounded-full bg-amber-500 ring-1 ring-white">
+                <span className="sr-only">Switch company</span>
+              </span>
+            </button>
+          )}
 
           {/* Full Screen Toggle */}
           <button 
@@ -289,5 +308,10 @@ export default function Header({ toggleSidebar }: HeaderProps) {
         </div>
       </div>
     </header>
+    <CompanySwitchModal
+      isOpen={isCompanySwitchOpen}
+      onClose={() => setIsCompanySwitchOpen(false)}
+    />
+    </>
   );
 }

@@ -455,11 +455,15 @@ export const securityService = {
   },
 
   saveUserSetting: async (userId: number, key: string, value: string): Promise<any> => {
-    return apiService.post(API_MODULES.AUTH, API_ENDPOINTS.USER_SETTING.SAVE, { userId, key, value });
+    return apiService.postSecure<any>(API_MODULES.AUTH, '/user-setting/save', { userId, key, value });
   },
 
   copyMenus: async (request: CopyMenuRequest): Promise<any> => {
     return apiService.post(API_MODULES.AUTH, API_ENDPOINTS.MENU.COPY, request);
+  },
+
+  checkMenuUsage: async (menuId: number): Promise<any> => {
+    return apiService.get(API_MODULES.AUTH, `/menu/check-usage/${menuId}`);
   }
 };
 
@@ -469,5 +473,3 @@ export interface CopyMenuRequest {
   MenuType: string;
   SelectedMenuIds: number[];
 }
-
-

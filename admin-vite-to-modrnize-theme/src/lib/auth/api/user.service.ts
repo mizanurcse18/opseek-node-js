@@ -66,24 +66,32 @@ export const userService = {
   },
 
   getUserById: async (id: number | string): Promise<any> => {
-    return apiService.getSecure(API_MODULES.AUTH, API_ENDPOINTS.USER.GET_BY_ID(id));
+    return apiService.postSecure(API_MODULES.AUTH, API_ENDPOINTS.USER.GET_BY_ID, { UserID: id });
   },
   getUserByIdSuper: async (id: number | string): Promise<any> => {
-    return apiService.getSecure(API_MODULES.AUTH, API_ENDPOINTS.USER.GET_BY_ID_SUPER(id));
+    return apiService.postSecure(API_MODULES.AUTH, API_ENDPOINTS.USER.GET_BY_ID_SUPER, { UserID: id });
+  },
+
+  getUserByUsername: async (username: string): Promise<any> => {
+    return apiService.get(API_MODULES.AUTH, `/user/username/${username}`);
   },
 
   saveUser: async (payload: any): Promise<any> => {
-    console.log(payload);
+    if (import.meta.env.DEV) console.log(payload);
     return apiService.postSecure(API_MODULES.AUTH, API_ENDPOINTS.USER.SAVE, payload);
   },
 
   saveUserSuper: async (payload: any): Promise<any> => {
-    console.log(payload);
+    if (import.meta.env.DEV) console.log(payload);
     return apiService.postSecure(API_MODULES.AUTH, API_ENDPOINTS.USER.CREATE_SUPER, payload);
   },
 
   changePassword: async (payload: any): Promise<any> => {
     return apiService.postSecure(API_MODULES.AUTH, API_ENDPOINTS.USER.CHANGE_PASSWORD, payload);
+  },
+
+  mapUserAndPerson: async (payload: { UserID: number; PersonID: number }): Promise<any> => {
+    return apiService.postSecure(API_MODULES.AUTH, API_ENDPOINTS.USER.MAP_USER_AND_PERSON, payload);
   },
 
   deleteUser: async (id: number | string): Promise<any> => {

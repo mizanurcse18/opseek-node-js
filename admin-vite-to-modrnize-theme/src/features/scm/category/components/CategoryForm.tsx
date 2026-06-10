@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
-import { Select } from '@/components/ui-old/Select';
+import { Select } from '@/components/ui/Select';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { useToast } from '@/components/ui/Toast';
 import { handleApiError } from '@/lib/error-handler';
@@ -15,6 +15,7 @@ interface CategoryFormProps {
   onSave?: () => void;
   onClose: () => void;
   onLoadingChange?: (loading: boolean) => void;
+  onSavingChange?: (saving: boolean) => void;
   /** Allows external save buttons (modal header, tree panel). */
   formId?: string;
   /** When false, company is taken from `externalCompanyId` (e.g. tree view toolbar). */
@@ -28,6 +29,7 @@ export function CategoryForm({
   onSave,
   onClose,
   onLoadingChange,
+  onSavingChange,
   formId = 'category-form',
   showCompanySelector,
   externalCompanyId,
@@ -73,10 +75,20 @@ export function CategoryForm({
         if (isSuperUser) {
           const resp = await companyService.getAllCompanies();
           if (isMounted && resp && Array.isArray(resp)) {
-            setCompanies(resp.map((c: any) => ({
+            const mapped = resp.map((c: any) => ({
               value: c.value || c.id || c.company_id,
               label: c.label || c.company_name || `Company #${c.value || c.id}`,
-            })));
+            }));
+            setCompanies(mapped);
+            // Auto-select first company if none is set
+            if (mapped.length > 0) {
+              setFormData(prev => {
+                if (!prev.company_id) {
+                  return { ...prev, company_id: String(mapped[0].value) };
+                }
+                return prev;
+              });
+            }
           }
         }
       } catch (err) {
@@ -141,7 +153,7 @@ export function CategoryForm({
       return;
     }
 
-    if (onLoadingChange) onLoadingChange(true);
+    if (onSavingChange) onSavingChange(true);
     try {
       const payload: any = {
         category_name: formData.category_name.trim(),
@@ -170,7 +182,7 @@ export function CategoryForm({
     } catch (err) {
       toast(handleApiError(err));
     } finally {
-      if (onLoadingChange) onLoadingChange(false);
+      if (onSavingChange) onSavingChange(false);
     }
   };
 

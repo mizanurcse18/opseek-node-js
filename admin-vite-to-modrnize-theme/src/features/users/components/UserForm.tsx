@@ -11,12 +11,13 @@ import { useToast } from '@/components/ui/Toast';
 import { handleApiError } from '@/lib/error-handler';
 import { Switch } from '@/components/ui/Switch';
 import { MultiSelect } from '@/components/ui/MultiSelect';
-import { Select } from '@/components/ui-old/Select';
+import { Select } from '@/components/ui/Select';
 import { Eye, EyeOff, Layout, Globe, Shield, Loader2, CheckCircle2, UserCircle, ClipboardCheck, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { Modal } from '@/components/ui/Modal';
+import { obfuscateId } from '@/lib/id-obfuscator';
 
 interface UserFormProps {
   initialData?: any;
@@ -25,6 +26,7 @@ interface UserFormProps {
   onClose?: () => void;
   isSuperUser?: boolean;
   onLoadingChange?: (loading: boolean) => void;
+  onSavingChange?: (saving: boolean) => void;
   roleType?: string;
 }
 
@@ -38,13 +40,21 @@ const CircleIcon = () => (
   <div className="h-4 w-4 rounded-full bg-gray-300 shrink-0"></div>
 );
 
-export default function UserForm({ initialData, isEditing, onSave, onClose, isSuperUser = false, onLoadingChange, roleType }: UserFormProps) {
+export default function UserForm({ initialData, isEditing, onSave, onClose, isSuperUser = false, onLoadingChange, onSavingChange, roleType }: UserFormProps) {
   const { toast, ToastComponent } = useToast();
-  const authUser = useSelector((state: RootState) => state.auth.user);
-  const navigate = useNavigate();
-  const location = useLocation();
+  const authUser = useSelector((state: RootState) => state.auth.user) as any;
 
-  // Resolve user type constraint from active router path to maintain strict form cohesion
+  // NOTE & WHY:
+  // We identify if the form is accessed via a role-specific stakeholder route context
+  // (e.g. /users/dealer, /users/dsr, /users/agent, /users/merchant).
+  // Under these specific routes, we apply strict role constraints (pre-selection, select locking, 
+  // and dynamic allowed security groups cascading).
+  // If the route is a standard admin page (/users) or a superuser page (/users/superuser), 
+  // isRoleSpecific evaluates to false, which allows the admin to freely manage all user types
+  // and assign any security groups without auto-selections or cascades filtering them out.
+  const isRoleSpecific = !!roleType && ['dealer', 'dsr', 'agent', 'merchant'].includes(roleType.toLowerCase());
+
+  // Map route roleType to specific user type numerical code
   let routeUserType = '';
   if (roleType === 'dealer') routeUserType = '8';
   else if (roleType === 'dsr') routeUserType = '6';
@@ -85,6 +95,8 @@ export default function UserForm({ initialData, isEditing, onSave, onClose, isSu
   const [lastSavedUser, setLastSavedUser] = useState<any>(null);
   const [errors, setErrors] = useState<{ UserName?: string; SecurityGroups?: string; CompanyID?: string; UserType?: string }>({});
 
+  const navigate = useNavigate();
+
   // Effect 0: Fetch full user details if editing
   const userId = userObj?.user_id || userObj?.UserID;
 
@@ -99,58 +111,24 @@ export default function UserForm({ initialData, isEditing, onSave, onClose, isSu
             const fullUser = response.data.user || response.data;
             const userGroups = response.data.groupChildList || response.data.group_child_list || [];
 
-            // Sync with groups so MultiSelect has options for already assigned groups
-            setGroups(prev => {
-              const merged = [...prev];
-              userGroups.forEach((g: any) => {
-                const groupId = g.security_group_id || g.SecurityGroupID || g.securityGroupId || g;
-                const groupName = g.group?.group_name || g.SecurityGroupName || g.securityGroupName || `Group #${groupId}`;
-                if (groupId && !merged.some(opt => String(opt.value) === String(groupId))) {
-                  merged.push({ value: groupId, label: groupName });
-                }
-              });
-              return merged;
-            });
-
-            // Sync company option if not loaded
-            const compId = fullUser.company_id || fullUser.CompanyID;
-            if (compId) {
-              setCompanies(prev => {
-                if (!prev.some(opt => String(opt.value) === String(compId))) {
-                  return [...prev, { value: compId, label: String(compId).toUpperCase() }];
-                }
-                return prev;
-              });
-            }
-
-            // Sync default page option if not loaded
-            const defaultMenu = fullUser.DefaultMenuID || fullUser.default_menu_id || fullUser.default_menu;
-            if (defaultMenu) {
-              setDefaultMenus(prev => {
-                if (!prev.some(opt => String(opt.value) === String(defaultMenu))) {
-                  return [...prev, { value: String(defaultMenu), label: `Page: ${defaultMenu}` }];
-                }
-                return prev;
-              });
-            }
-
             setFormData(prev => ({
               ...prev,
               UserID: fullUser.user_id || fullUser.UserID || prev.UserID,
               UserName: fullUser.user_name || fullUser.UserName || prev.UserName,
               IsAdmin: !!(fullUser.is_admin || fullUser.IsAdmin),
               IsActive: !!(fullUser.is_active ?? fullUser.IsActive),
-              CompanyID: compId || prev.CompanyID,
-              default_menu: String(defaultMenu || prev.default_menu || ''),
+              CompanyID: fullUser.company_id || fullUser.CompanyID || prev.CompanyID,
+              default_menu: fullUser.DefaultMenuID || fullUser.default_menu_id || prev.default_menu,
               IsForcedLogin: !!(fullUser.is_forced_login || fullUser.IsForcedLogin),
               IsLocked: !!(fullUser.is_locked || fullUser.IsLocked),
               LockedDateTime: fullUser.locked_date_time || fullUser.LockedDateTime || prev.LockedDateTime,
-              UserType: String(fullUser.user_type || fullUser.UserType || prev.UserType),
+              UserType: fullUser.user_type || fullUser.UserType || prev.UserType,
               selectedGroups: userGroups.map((g: any) => g.security_group_id || g.SecurityGroupID || g.securityGroupId || g)
             }));
           }
         } catch (error) {
           console.error('Failed to fetch full user details:', error);
+          // Only show toast if it's not a cancellation/decryption error we're already handling
           if (error instanceof Error && !error.message.includes('Decryption failed')) {
             toast({ title: 'Error', description: 'Failed to load detailed user information.', status: 'error' });
           }
@@ -263,9 +241,12 @@ export default function UserForm({ initialData, isEditing, onSave, onClose, isSu
   }, [formData.CompanyID, isSuperUser]);
 
   const [allowedGroupIds, setAllowedGroupIds] = useState<(string | number)[] | null>(null);
-  const isRoleSpecific = !!roleType && ['dealer', 'dsr', 'agent', 'merchant'].includes(roleType.toLowerCase());
 
-  // Dynamically fetch and filter the available security groups based on the KYC workflow configuration
+  // NOTE & WHY:
+  // Dynamically fetch and filter the available security groups based on the KYC workflow configuration.
+  // This constraint should ONLY apply when creating/editing users through role-specific stakeholder routes (isRoleSpecific = true).
+  // On standard admin directories (/users) and superuser menus (/users/superuser), we bypass this filtering (allowedGroupIds = null)
+  // to allow full control of all security groups without any automated cascading or auto-selection overrides.
   useEffect(() => {
     const fetchCascadedGroups = async () => {
       if (isRoleSpecific && formData.UserType) {
@@ -275,45 +256,47 @@ export default function UserForm({ initialData, isEditing, onSave, onClose, isSu
             const mappedGroups = response.data.allowedSecurityGroups;
             setAllowedGroupIds(mappedGroups);
             
-            // Auto-select allowed groups ONLY if we are creating a new user (isEditing is false)
-            if (!isEditing) {
-              setFormData(prev => {
-                if (prev.selectedGroups.length === 0) {
-                  const groupValues = mappedGroups.map((g: any) => 
-                    typeof g === 'number' ? g : Number(g) || g
-                  );
-                  return {
-                    ...prev,
-                    selectedGroups: groupValues
-                  };
-                }
-                return prev;
-              });
-            }
-          } else {
-            setAllowedGroupIds(null);
-          }
-        } catch (error) {
-          console.error('Failed to fetch dynamic allowed security groups:', error);
-          setAllowedGroupIds(null);
-        }
-      } else {
-        setAllowedGroupIds(null);
-      }
-    };
-    fetchCascadedGroups();
-  }, [formData.UserType, isEditing, isRoleSpecific]);
-
-  // Dynamically cascade security groups based on dynamic KYC workflow mapping
-  const cascadedGroups = React.useMemo(() => {
-    if (allowedGroupIds && allowedGroupIds.length > 0) {
-      return groups.filter(g => 
-        allowedGroupIds.some(ag => String(ag) === String(g.value)) ||
-        formData.selectedGroups.some(sg => String(sg) === String(g.value)) // Always preserve and display already assigned groups during edits
-      );
-    }
-    return groups; // Fallback to all groups if no mapping is configured
-  }, [groups, allowedGroupIds, formData.selectedGroups]);
+             // NOTE & WHY: Auto-select allowed groups ONLY if we are creating a new user (isEditing is false).
+             // If we are editing, we MUST NEVER auto-select or overwrite, as the user's saved groups
+             // are being fetched asynchronously from the API and must not be replaced.
+             if (!isEditing) {
+               setFormData(prev => {
+                 if (prev.selectedGroups.length === 0) {
+                   const groupValues = mappedGroups.map((g: any) => 
+                     typeof g === 'number' ? g : Number(g) || g
+                   );
+                   return {
+                     ...prev,
+                     selectedGroups: groupValues
+                   };
+                 }
+                 return prev;
+               });
+             }
+           } else {
+             setAllowedGroupIds(null); // No mapping configured, show all groups
+           }
+         } catch (error) {
+           console.error('Failed to fetch dynamic allowed security groups:', error);
+           setAllowedGroupIds(null);
+         }
+       } else {
+         setAllowedGroupIds(null); // Bypass filter: show all groups on standard routes
+       }
+     };
+     fetchCascadedGroups();
+   }, [formData.UserType, isEditing, isRoleSpecific]);
+ 
+   // Dynamically cascade security groups based on dynamic KYC workflow mapping
+   const cascadedGroups = React.useMemo(() => {
+     if (allowedGroupIds && allowedGroupIds.length > 0) {
+       return groups.filter(g => 
+         allowedGroupIds.some(ag => String(ag) === String(g.value)) ||
+         formData.selectedGroups.some(sg => String(sg) === String(g.value)) // Always preserve and display already assigned groups during edits
+       );
+     }
+     return groups; // Fallback to all groups if no mapping is configured
+   }, [groups, allowedGroupIds, formData.selectedGroups]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -336,8 +319,15 @@ export default function UserForm({ initialData, isEditing, onSave, onClose, isSu
       isValid = false;
     }
 
-    if (formData.Pin && formData.Pin.length !== 4) {
-      toast({ title: 'Validation Error', description: 'Mobile PIN must be exactly 4 digits.', status: 'error' });
+    // NOTE & WHY: Commented out because administrators can enroll users without passwords/PINs;
+    // the users themselves will configure their credentials during onboarding or activation later.
+    // if (!isEditing && !formData.Password && !formData.Pin) {
+    //   toast({ title: 'Validation Error', description: 'Either Password or PIN must be provided for new users.', status: 'error' });
+    //   isValid = false;
+    // }
+
+    if (formData.Pin && formData.Pin.length !== 6) {
+      toast({ title: 'Validation Error', description: 'Mobile PIN must be exactly 6 digits.', status: 'error' });
       isValid = false;
     }
 
@@ -347,8 +337,12 @@ export default function UserForm({ initialData, isEditing, onSave, onClose, isSu
     }
 
     setIsLoading(true);
-    onLoadingChange?.(true);
+    onSavingChange?.(true);
     try {
+      // NOTE & WHY: Resolve the company ID dynamically with zero hardcoded values.
+      // - Superusers use the selected company from the dropdown (formData.CompanyID).
+      // - Non-superusers use the fetched company ID (when editing, loaded in fetchUserDetails)
+      //   or fall back to the active logged-in administrator's company ID (when creating a new user).
       const selectedCompanyId = isSuperUser
         ? (formData.CompanyID || "")
         : (formData.CompanyID || authUser?.company_id || authUser?.CompanyID || "");
@@ -396,13 +390,7 @@ export default function UserForm({ initialData, isEditing, onSave, onClose, isSu
       if (response?.response_code === 'DUPLICATE_USER') {
         setErrors({ UserName: response.message || 'This username already exists.' });
         toast({ title: 'Validation Error', description: response.message || 'This username already exists.', status: 'error' });
-      } else if (response && (
-        response.response_code === 'SAVE_SUCCESS' ||
-        response.response_code === 'Success' ||
-        response.response_code === 'OK' ||
-        response.status_code === 200 ||
-        response.status_code === 201
-      )) {
+      } else if (response && (response.response_code === 'SAVE_SUCCESS' || response.response_code === 'Success' || (response.status_code === 200 && !response.response_code))) {
         const savedUser = response.data?.user || response.data || payload;
         setLastSavedUser({
           ...savedUser,
@@ -421,10 +409,14 @@ export default function UserForm({ initialData, isEditing, onSave, onClose, isSu
       toast(handleApiError(error));
     } finally {
       setIsLoading(false);
-      onLoadingChange?.(false);
+      onSavingChange?.(false);
     }
   };
-
+  // NOTE & WHY:
+  // Filter user types based on logged-in dealer role restrictions.
+  // We only restrict logged-in Dealers (user_type = 8) to creating DSRs (6) and Agents (3)
+  // when operating under role-specific routes (isRoleSpecific = true).
+  // On global routes, we bypass this to let admins/superusers see and assign all user types freely.
   const filteredUserTypes = React.useMemo(() => {
     if (isRoleSpecific && authUser?.user_type === 8) {
       return userTypes.filter(ut => ut.value === '6' || ut.value === '3');
@@ -532,6 +524,9 @@ export default function UserForm({ initialData, isEditing, onSave, onClose, isSu
                   value={formData.UserType}
                   onChange={(val) => setFormData({ ...formData, UserType: String(val || '') })}
                   placeholder="Select user type..."
+                  // NOTE & WHY: Disable and lock the User Type dropdown ONLY on role-specific stakeholder paths
+                  // where the type is defined by the URL route context (e.g. /users/dealer).
+                  // Standard user directories (/users) leave this fully interactive.
                   disabled={isRoleSpecific}
                 />
               </div>
@@ -600,12 +595,12 @@ export default function UserForm({ initialData, isEditing, onSave, onClose, isSu
                   type={showPin ? "text" : "password"}
                   inputMode="numeric"
                   pattern="[0-9]*"
-                  maxLength={4}
-                  placeholder="Enter 4 digit mobile PIN"
+                  maxLength={6}
+                  placeholder="Enter 6 digit mobile PIN"
                   value={formData.Pin}
                   onChange={(e) => {
                     const val = e.target.value.replace(/\D/g, '');
-                    if (val.length <= 4) {
+                    if (val.length <= 6) {
                       setFormData({ ...formData, Pin: val });
                     }
                   }}
@@ -700,11 +695,13 @@ export default function UserForm({ initialData, isEditing, onSave, onClose, isSu
               onClick={() => {
                 const username = lastSavedUser?.user_name || lastSavedUser?.UserName || formData.UserName;
                 if (username) {
+                  // Pass the current path as state so KYC page knows where to return
                   navigate(ROUTES.STAKEHOLDER_KYC.replace(':id', username), { 
                     state: { from: location.pathname } 
                   });
                 }
               }}
+
               className="w-full group flex items-center justify-between p-3 sm:p-4 bg-primary-600 hover:bg-primary-700 text-white rounded-2xl transition-all shadow-lg shadow-primary-900/20"
             >
               <div className="flex items-center gap-3 sm:gap-4">
@@ -718,6 +715,26 @@ export default function UserForm({ initialData, isEditing, onSave, onClose, isSu
               </div>
               <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
             </button>
+
+{/* <button
+              onClick={() => {
+                // Future: Profile editing route
+                toast({ title: 'Coming Soon', description: 'User profile management is being finalized.', status: 'info' });
+              }}
+              className="w-full group flex items-center justify-between p-3 sm:p-4 bg-card-bg border border-border-theme hover:border-primary-600/30 text-text-main rounded-2xl transition-all"
+            >
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="h-9 w-9 sm:h-10 sm:w-10 bg-primary-50 rounded-xl flex items-center justify-center">
+                  <UserCircle className="h-4 w-4 sm:h-5 sm:w-5 text-primary-600" />
+                </div>
+                <div className="text-left">
+                  <div className="text-[12px] sm:text-[13px] font-black uppercase tracking-wider">Configure User Profile</div>
+                  <div className="text-[9px] sm:text-[10px] text-text-muted">Set up personal details and preferences</div>
+                </div>
+              </div>
+              <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 text-primary-600 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
+            </button> */}
+
 
             <button
               onClick={() => {

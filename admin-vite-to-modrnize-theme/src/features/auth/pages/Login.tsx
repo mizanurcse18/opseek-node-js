@@ -6,6 +6,7 @@ import { ROUTES } from '@/constants/routes';
 import { authService } from '@/lib/auth/api/auth.service';
 import { setTokens, setUserDetails } from '@/lib/auth';
 import { setCredentials } from '@/features/auth/authSlice';
+import { CompanySwitchModal } from '@/features/auth/components/CompanySwitchModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,6 +21,8 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [showCompanySwitch, setShowCompanySwitch] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const navigate = useNavigate();
   const { toast, ToastComponent } = useToast();
 
@@ -52,12 +55,14 @@ export default function Login() {
       if (response && (response.status_code === 200 || response.response_code === 'LOGIN_SUCCESS')) {
         setTokens(response.data.token, response.data.refresh_token);
 
+        const isAdmin = response.data.is_admin || false;
         const userObj = { 
           id: response.data.user_id?.toString() || '1', 
           name: response.data.user_name || response.data.user || email, 
           email: email, 
           role: response.data.role || 'admin',
           company_id: response.data.company_id || response.data.CompanyID || '',
+          is_admin: isAdmin,
           is_forced_login: !!response.data.is_forced_login
         };
 
@@ -68,6 +73,12 @@ export default function Login() {
           token: response.data.token,
           refreshToken: response.data.refresh_token
         }));
+
+        if (isAdmin) {
+          setIsSuperAdmin(true);
+          setShowCompanySwitch(true);
+          return;
+        }
 
         if (userObj.is_forced_login) {
           toast({ title: 'Password update required', description: 'Please change your password to continue.', status: 'info' });
@@ -95,6 +106,7 @@ export default function Login() {
   };
 
   return (
+    <>
     <div className="min-h-screen w-full flex items-center justify-center p-6 relative overflow-hidden bg-[#020617]">
       {/* Enhanced Multi-layer Background: Blue, White, Black */}
       <div className="absolute inset-0 z-0">
@@ -229,5 +241,15 @@ export default function Login() {
       </div>
       <ToastComponent />
     </div>
+    
+    <CompanySwitchModal
+      isOpen={showCompanySwitch}
+      onClose={() => {
+        setShowCompanySwitch(false);
+        const targetPath = ROUTES.DASHBOARD;
+        navigate(targetPath);
+      }}
+    />
+    </>
   );
 }

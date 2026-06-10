@@ -1,0 +1,201 @@
+# Antigravity Task: Build Missing Frontend Pages
+
+The admin-vite React app at `ui/admin-vite/` has several backend controllers with NO frontend pages. Build all of them following the existing page patterns (look at Warehouse, Role, or User pages for reference).
+
+## Pattern Reference
+
+Each page follows this structure:
+```
+src/features/{module}/{feature}/
+├── pages/{Feature}Page.tsx       — main page component
+├── components/                    — table, modal, form components
+├── api/{feature}.api.ts           — API calls (if needed)
+└── types/index.ts                 — TypeScript types (if needed)
+```
+
+Add routes in `src/app/router/index.tsx` and route constants in `src/constants/routes.ts`.
+
+Use existing UI components from `src/components/ui/`: Table, Button, Modal, Input, Select, Loader, DataTable, Tabs, Toast, etc.
+
+API calls go through `apiClient` from `src/lib/axios.ts` — all endpoints are already defined in `src/constants/api.ts` where possible.
+
+---
+
+## Task 1: Finance Pages
+
+### 1a: Chart of Accounts Page
+
+**Route:** `/finance/chart-of-accounts`
+**Backend:** `ChartOfAccountsController` in Finance.API (port 5008)
+**API endpoints:**
+- POST `/finance/chartofaccounts/get-grid-data` — list COA as tree
+- POST `/finance/chartofaccounts/save` — create/edit account
+- GET `/finance/chartofaccounts/get/{id}` — get single account
+- POST `/finance/chartofaccounts/delete` — delete account
+
+**Features:**
+- Tree view showing account hierarchy (parent_account_id → level structure)
+- Columns: account_code, account_name, account_type, normal_balance, level, is_transactional
+- Modal for create/edit with fields: account_code, account_name, account_type (dropdown: Asset/Liability/Equity/Income/Expense), parent_account (tree dropdown), normal_balance (Dr/Cr), is_transactional (checkbox)
+- Follow same pattern as Category tree view (see `src/features/scm/category/`)
+
+### 1b: Vouchers Page
+
+**Route:** `/finance/vouchers`
+**Backend:** `VouchersController` in Finance.API
+**API endpoints:**
+- POST `/finance/vouchers/get-grid-data` — list vouchers
+- GET `/finance/vouchers/get/{id}` — get voucher with details
+- POST `/finance/vouchers/create` — create voucher (double-entry)
+- POST `/finance/vouchers/reverse/{id}` — reverse/cancel voucher
+
+**Features:**
+- DataTable with columns: voucher_id, voucher_type (PV/RV/JV/CV), voucher_date, company_id, is_cancelled
+- Create voucher modal with:
+  - Header: voucher_type (dropdown), voucher_date (date picker), company_id
+  - Detail lines table: account_id (dropdown from COA), debit_amount, credit_amount, ref_type, ref_id, narration
+  - Auto-validate Dr = Cr before save
+- Detail view page showing voucher with all lines
+
+---
+
+## Task 2: DSR Pages
+
+All under `src/features/sales/dsr/` — follow the existing `src/features/sales/visit-plans/` pattern.
+
+### 2a: DSR Attendance Page
+
+**Route:** `/sales/dsr/attendance`
+**Backend:** `dsr/AttendanceController` in Sales.API
+**API endpoints** (check controller methods and match pattern):
+- Grid listing attendance records
+- Create/edit attendance entry
+- Fields: dsr_user_id, date, check_in_time, check_out_time, status (Present/Absent/Late)
+
+### 2b: DSR Collection Page
+
+**Route:** `/sales/dsr/collection`
+**Backend:** `dsr/CollectionController`
+- Grid listing collections
+- Create collection entry
+- Fields: dsr_user_id, stakeholder_id (customer), amount, collection_date, payment_method, reference
+
+### 2c: DSR Daily Sales Page
+
+**Route:** `/sales/dsr/daily-sales`
+**Backend:** `dsr/DailySalesController`
+- Grid with daily sales records
+- Create sale with detail lines (product_id, qty, price)
+- Total amount auto-calculated
+
+### 2d: DSR Expense Page
+
+**Route:** `/sales/dsr/expense`
+**Backend:** `dsr/ExpenseController`
+- Grid listing expenses
+- Create expense: expense_type, amount, date, remarks, receipt_image
+
+### 2e: DSR Target Page
+
+**Route:** `/sales/dsr/target`
+**Backend:** `dsr/TargetController`
+- Grid listing sales targets
+- Create target: dsr_user_id, target_amount, period (monthly/quarterly), start/end_date
+
+### 2f: DSR Visit Page
+
+**Route:** `/sales/dsr/visit`
+**Backend:** `dsr/VisitController` (different from VisitPlan — this is actual visit check-in/out)
+- Grid listing visits
+- Create visit: plan_detail_id, stakeholder_id, check_in_time, check_out_time, notes, visit_status
+
+---
+
+## Task 3: Security Misc Pages
+
+### 3a: Audit Log Page
+
+**Route:** `/master-settings/security/audit-log`
+**Backend:** `AuditLogController`
+- Read-only grid showing audit trail
+- Columns: table_name, action (INSERT/UPDATE/DELETE), record_id, old_values, new_values, changed_by, changed_at
+- Filters by date range, table name, user
+
+### 3b: Financial Year Page
+
+**Route:** `/master-settings/security/financial-year`
+**Backend:** `FinancialYearController`
+- Grid listing financial years
+- Create/edit: name, start_date, end_date, is_closed
+- Only one year can be active at a time
+
+### 3c: Global Settings Page
+
+**Route:** `/settings/global`
+**Backend:** `GlobalSettingController`
+- Key-value pair management
+- Grid: key, value, description, category
+- Modal for edit
+
+### 3d: Notifications Page
+
+**Route:** `/support/notifications`
+**Backend:** `NotificationController`
+- Grid listing notifications
+- Columns: title, message, type, is_read, created_at, expiry_date
+- Mark as read, delete
+
+---
+
+## Router Updates Needed
+
+Add all routes to `src/app/router/index.tsx`:
+```tsx
+import ChartOfAccountsPage from '@/features/finance/chart-of-accounts/pages/ChartOfAccountsPage';
+import VouchersPage from '@/features/finance/vouchers/pages/VouchersPage';
+import DsrAttendancePage from '@/features/sales/dsr/attendance/pages/DsrAttendancePage';
+import DsrCollectionPage from '@/features/sales/dsr/collection/pages/DsrCollectionPage';
+// ... etc
+```
+
+And route constants to `src/constants/routes.ts`.
+
+## Files to Create
+
+```
+src/features/finance/
+├── chart-of-accounts/
+│   ├── pages/ChartOfAccountsPage.tsx
+│   ├── components/ChartOfAccountsTable.tsx
+│   ├── components/ChartOfAccountsModal.tsx
+│   └── components/ChartOfAccountsTree.tsx
+├── vouchers/
+│   ├── pages/VouchersPage.tsx
+│   ├── components/VoucherTable.tsx
+│   ├── components/VoucherModal.tsx
+│   └── components/VoucherDetailLines.tsx
+
+src/features/sales/dsr/
+├── attendance/pages/DsrAttendancePage.tsx + components
+├── collection/pages/DsrCollectionPage.tsx + components
+├── daily-sales/pages/DsrDailySalesPage.tsx + components
+├── expense/pages/DsrExpensePage.tsx + components
+├── target/pages/DsrTargetPage.tsx + components
+├── visit/pages/DsrVisitPage.tsx + components
+
+src/features/master-settings/security/
+├── audit-log/pages/AuditLogPage.tsx
+├── financial-year/pages/FinancialYearPage.tsx
+
+src/features/settings/
+├── global/pages/GlobalSettingsPage.tsx
+
+src/features/support/
+├── notifications/pages/NotificationsPage.tsx
+```
+
+## Verification
+
+- `npx vite build` in ui/admin-vite → 0 errors
+- Each page renders without crash (check browser console)
+- API calls reach the correct endpoints through gateway (/api/v1/{service}/{path})

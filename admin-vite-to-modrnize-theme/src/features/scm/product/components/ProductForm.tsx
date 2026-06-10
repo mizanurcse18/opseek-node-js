@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
-import { Select } from '@/components/ui-old/Select';
+import { Select } from '@/components/ui/Select';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { useToast } from '@/components/ui/Toast';
 import { handleApiError } from '@/lib/error-handler';
@@ -53,6 +53,7 @@ export interface ProductFormProps {
   onSave?: () => void;
   onClose: () => void;
   onLoadingChange?: (loading: boolean) => void;
+  onSavingChange?: (saving: boolean) => void;
   /** Tree view: category comes from the selected tree node. */
   readonlyCategory?: boolean;
   showCompanySelector?: boolean;
@@ -87,6 +88,7 @@ export function ProductForm({
   onSave,
   onClose,
   onLoadingChange,
+  onSavingChange,
   readonlyCategory = false,
   showCompanySelector = true,
   companyId,
@@ -196,10 +198,20 @@ export function ProductForm({
         if (isSuperUser) {
           const resp = await companyService.getAllCompanies();
           if (mounted && resp && Array.isArray(resp)) {
-            setCompanies(resp.map((c: any) => ({
+            const mapped = resp.map((c: any) => ({
               value: c.value || c.id || c.company_id,
               label: c.label || c.company_name || `Company #${c.value || c.id}`,
-            })));
+            }));
+            setCompanies(mapped);
+            // Auto-select first company if none is set
+            if (mapped.length > 0) {
+              setFormData(prev => {
+                if (!prev.company_id) {
+                  return { ...prev, company_id: String(mapped[0].value) };
+                }
+                return prev;
+              });
+            }
           }
         }
 
@@ -546,7 +558,7 @@ export function ProductForm({
       return;
     }
 
-    if (onLoadingChange) onLoadingChange(true);
+    if (onSavingChange) onSavingChange(true);
     setUploadingImage(true);
     try {
       const sortedImages = [...images].sort((a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0));
@@ -599,7 +611,7 @@ export function ProductForm({
       toast(handleApiError(err));
     } finally {
       setUploadingImage(false);
-      if (onLoadingChange) onLoadingChange(false);
+      if (onSavingChange) onSavingChange(false);
     }
   };
 

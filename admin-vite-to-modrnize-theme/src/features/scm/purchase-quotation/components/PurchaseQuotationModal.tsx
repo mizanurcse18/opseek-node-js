@@ -3,7 +3,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
-import { Select } from '@/components/ui-old/Select';
+import { Select } from '@/components/ui/Select';
 import { Loader } from '@/components/ui/Loader';
 import { Save, Plus, Trash2 } from 'lucide-react';
 import { purchaseQuotationService } from '@/lib/scm/api/purchase-quotation.service';
@@ -84,8 +84,9 @@ export function PurchaseQuotationModal({ isOpen, onClose, onSave, initialData, i
           purchaseRequisitionService.getGridData({ Limit: 100, Offset: 0 }),
         ]);
 
-        const suppData = suppRes?.data ?? suppRes;
-        setSuppliers(Array.isArray(suppData) ? suppData : []);
+        // Normalize supplier combo — API returns { data: [{value, label},...] }
+        const suppList = parseComboResponse(suppRes);
+        setSuppliers(suppList);
 
         // Load PRs for the requisition dropdown
         const prData = prRes?.data?.rows ?? prRes?.data ?? [];
@@ -293,7 +294,7 @@ export function PurchaseQuotationModal({ isOpen, onClose, onSave, initialData, i
         <div className="flex items-center gap-3 pr-2">
           <Button
             type="button"
-            disabled={saving}
+            disabled={loading || saving}
             onClick={handleSubmit}
             className="bg-[#2e125c] hover:bg-[#3d187a] text-white flex items-center gap-2 py-1.5 px-4 rounded-lg shadow-md hover:shadow-lg transition-all"
           >
@@ -301,6 +302,11 @@ export function PurchaseQuotationModal({ isOpen, onClose, onSave, initialData, i
               <>
                 <Loader className="h-3.5 w-3.5 animate-spin text-white" />
                 <span className="text-[10px] font-black uppercase tracking-[0.12em] text-white">Saving...</span>
+              </>
+            ) : loading ? (
+              <>
+                <Loader className="h-3.5 w-3.5 animate-spin text-white" />
+                <span className="text-[10px] font-black uppercase tracking-[0.12em] text-white">Loading...</span>
               </>
             ) : (
               <>
