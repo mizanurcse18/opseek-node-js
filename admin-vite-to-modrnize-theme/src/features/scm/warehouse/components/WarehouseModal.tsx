@@ -24,22 +24,13 @@ export function WarehouseModal({ isOpen, onClose, onSave, initialData, isSuperUs
       onClose={onClose}
       maxWidth="lg"
       title={isEditing ? 'Edit Warehouse' : 'Create Warehouse'}
-      footer={
-        <div className="flex items-center justify-end gap-3 w-full">
+      headerAction={
+        <div className="flex items-center gap-3 pr-2">
           {isSuperUser && (
-            <span className="text-[9px] font-black text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2.5 py-1 rounded uppercase tracking-[0.15em] mr-auto">
+            <span className="text-[9px] font-black text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded uppercase tracking-[0.15em]">
               Super Admin
             </span>
           )}
-          <Button 
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            disabled={loading || saving}
-            className="text-xs font-bold py-2 px-4 rounded-lg border-border-theme hover:bg-primary-500/5 transition-all text-text-main"
-          >
-            Cancel
-          </Button>
           <Button 
             type="submit" 
             form="warehouse-form"

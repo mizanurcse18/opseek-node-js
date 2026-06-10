@@ -263,7 +263,7 @@ export function WarehouseForm({ initialData, isSuperUser = false, onSave, onClos
           </div>
         </div>
 
-        <div className="space-y-2 md:col-span-1">
+        <div className="space-y-2 md:col-span-3">
           <Label className="text-[10px] font-black uppercase tracking-widest text-text-muted/50 ml-1">
             Division <span className="text-red-500 font-bold">*</span>
           </Label>
@@ -276,7 +276,7 @@ export function WarehouseForm({ initialData, isSuperUser = false, onSave, onClos
           />
         </div>
 
-        <div className="space-y-2 md:col-span-1">
+        <div className="space-y-2 md:col-span-3">
           <Label className="text-[10px] font-black uppercase tracking-widest text-text-muted/50 ml-1">
             District <span className="text-red-500 font-bold">*</span>
           </Label>
@@ -290,7 +290,7 @@ export function WarehouseForm({ initialData, isSuperUser = false, onSave, onClos
           />
         </div>
 
-        <div className="space-y-2 md:col-span-1">
+        <div className="space-y-2 md:col-span-3">
           <Label className="text-[10px] font-black uppercase tracking-widest text-text-muted/50 ml-1">
             Thana <span className="text-red-500 font-bold">*</span>
           </Label>
